@@ -105,17 +105,31 @@ Persistent omissions and replacements must use Pi's `context_edit` entries.
 
 ## Development
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, Changesets, the commit hook, and the separate release procedure.
+See [CHANGELOG.md](CHANGELOG.md) for the local development history.
+
+Prerequisites: Node.js 22.19+, Python 3.11+, Git, npm, Make, and tar.
+
 Install the locked development dependencies:
 
 ```sh
 npm --prefix /Users/patwoz/dev/Personal/pi/pi-background-compaction ci --ignore-scripts
 ```
 
-Run checks:
+Install the changeset hook once per clone:
+
+```sh
+make -C /Users/patwoz/dev/Personal/pi/pi-background-compaction hooks-install
+```
+
+Run the same checks as CI:
 
 ```sh
 npm --prefix /Users/patwoz/dev/Personal/pi/pi-background-compaction run check
 ```
+
+This checks formatting, lint, types, runtime tests, the actual npm tarball, and the Changesets flow.
+The CI definition covers Linux/macOS and Node.js 22/24. Hosted CI needs a remote and has not run yet.
 
 Tests use temporary directories, in-memory credentials, in-memory sessions, and a local scripted provider.
 They do not load personal extensions, read real credential files, or call a remote model.

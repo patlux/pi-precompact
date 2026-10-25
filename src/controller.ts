@@ -1,22 +1,26 @@
 import {
-  SettingsManager,
   buildSessionProjection,
   type CompactionResult,
   type ExtensionAPI,
   type ExtensionContext,
   type SessionBeforeCompactEvent,
   type SessionBeforeCompactResult,
+  SettingsManager,
 } from "@earendil-works/pi-coding-agent";
-import type { NativeCompaction } from "./native.ts";
 import { inheritOwnFiles, isFileDetails } from "./files.ts";
-import { fingerprint, snapshotValid, validateResult, type Snapshot } from "./validation.ts";
+import type { NativeCompaction } from "./native.ts";
+import { fingerprint, type Snapshot, snapshotValid, validateResult } from "./validation.ts";
 
 export interface Options {
   startRatio: number;
   minimumTokens: number;
   timeoutMs: number;
 }
-export const DEFAULT_OPTIONS: Readonly<Options> = { startRatio: 0.85, minimumTokens: 64_000, timeoutMs: 120_000 };
+export const DEFAULT_OPTIONS: Readonly<Options> = {
+  startRatio: 0.85,
+  minimumTokens: 64_000,
+  timeoutMs: 120_000,
+};
 type State = "idle" | "running" | "ready" | "paused" | "disabled";
 interface Job {
   snapshot: Snapshot;
@@ -29,7 +33,7 @@ interface Job {
 export async function untilAborted<T>(promise: Promise<T>, signal: AbortSignal): Promise<T | undefined> {
   if (signal.aborted) return undefined;
   let listener = () => {};
-  const abort = new Promise<undefined>(resolve => {
+  const abort = new Promise<undefined>((resolve) => {
     listener = () => resolve(undefined);
     signal.addEventListener("abort", listener, { once: true });
   });
@@ -52,8 +56,14 @@ export class BackgroundCompaction {
     private readonly native: NativeCompaction,
     private readonly options: Options = DEFAULT_OPTIONS,
   ) {
-    if (!(options.startRatio > 0 && options.startRatio < 1) || !Number.isFinite(options.minimumTokens) || options.minimumTokens < 0 ||
-        !Number.isSafeInteger(options.timeoutMs) || options.timeoutMs < 1) throw new Error("Invalid background compaction options");
+    if (
+      !(options.startRatio > 0 && options.startRatio < 1) ||
+      !Number.isFinite(options.minimumTokens) ||
+      options.minimumTokens < 0 ||
+      !Number.isSafeInteger(options.timeoutMs) ||
+      options.timeoutMs < 1
+    )
+      throw new Error("Invalid background compaction options");
   }
 
   status(): string {
@@ -74,12 +84,21 @@ export class BackgroundCompaction {
   private show(ctx: ExtensionContext, state: State, reason: string): void {
     this.state = state;
     this.last = reason;
-    if (ctx.mode === "tui") ctx.ui.setStatus("background-compaction", state === "running" || state === "ready" ? `compact: ${state}` : undefined);
+    if (ctx.mode === "tui")
+      ctx.ui.setStatus(
+        "background-compaction",
+        state === "running" || state === "ready" ? `compact: ${state}` : undefined,
+      );
   }
 
   private identity(ctx: ExtensionContext): string {
     const settings = this.pi.getSettings();
-    return fingerprint({ model: ctx.model, compaction: settings.compaction, retry: settings.retry, thinking: ctx.thinkingLevel });
+    return fingerprint({
+      model: ctx.model,
+      compaction: settings.compaction,
+      retry: settings.retry,
+      thinking: ctx.thinkingLevel,
+    });
   }
 
   private discard(ctx: ExtensionContext, reason: string): void {
@@ -95,7 +114,12 @@ export class BackgroundCompaction {
   }
 
   private valid(job: Job, ctx: ExtensionContext): boolean {
-    return snapshotValid(job.snapshot, ctx.sessionManager.getSessionId(), this.identity(ctx), ctx.sessionManager.getBranch());
+    return snapshotValid(
+      job.snapshot,
+      ctx.sessionManager.getSessionId(),
+      this.identity(ctx),
+      ctx.sessionManager.getBranch(),
+    );
   }
 
   /** Called from a persisted turn boundary. This method never awaits the provider. */
@@ -112,13 +136,24 @@ export class BackgroundCompaction {
     if (this.job || this.failures >= 2) return;
     const usage = ctx.getContextUsage();
     const ceiling = model.contextWindow - settings.reserveTokens;
-    if (!usage || usage.tokens === null || !Number.isFinite(usage.tokens) || usage.tokens < ceiling * this.options.startRatio || usage.tokens >= ceiling) return;
+    if (
+      !usage ||
+      usage.tokens === null ||
+      !Number.isFinite(usage.tokens) ||
+      usage.tokens < ceiling * this.options.startRatio ||
+      usage.tokens >= ceiling
+    )
+      return;
     const branch = ctx.sessionManager.getBranch();
-    const measured = buildSessionProjection(branch).messages.findLast(message =>
-      message.role === "assistant" && message.stopReason !== "error" && message.stopReason !== "aborted",
+    const measured = buildSessionProjection(branch).messages.findLast(
+      (message) =>
+        message.role === "assistant" && message.stopReason !== "error" && message.stopReason !== "aborted",
     );
-    if (measured?.role !== "assistant" ||
-        measured.usage.input + measured.usage.cacheRead + measured.usage.cacheWrite < this.options.minimumTokens) return;
+    if (
+      measured?.role !== "assistant" ||
+      measured.usage.input + measured.usage.cacheRead + measured.usage.cacheWrite < this.options.minimumTokens
+    )
+      return;
     const preparation = this.native.prepareCompaction(branch, settings);
     if (!preparation) return;
     inheritOwnFiles(preparation, branch);
@@ -139,19 +174,30 @@ export class BackgroundCompaction {
     const work = Promise.resolve().then(() => {
       controller.signal.throwIfAborted();
       return this.native.compact(
-        snapshot.preparation, model, undefined, undefined, undefined, controller.signal, ctx.thinkingLevel,
+        snapshot.preparation,
+        model,
+        undefined,
+        undefined,
+        undefined,
+        controller.signal,
+        ctx.thinkingLevel,
         (requestModel, context, options) => ctx.modelRegistry.streamSimple(requestModel, context, options),
-        undefined, settingsManager.getRetrySettings(),
+        undefined,
+        settingsManager.getRetrySettings(),
       );
     });
     job.promise = untilAborted(work, controller.signal)
       .catch(() => undefined) // Never copy provider errors (possibly sensitive) into status or session data.
-      .then(result => {
+      .then((result) => {
         if (this.job !== job) return undefined;
         if (!result) {
           this.job = undefined;
           this.failures++;
-          this.show(ctx, this.failures >= 2 ? "paused" : "idle", "Background request failed or timed out; native fallback remains active");
+          this.show(
+            ctx,
+            this.failures >= 2 ? "paused" : "idle",
+            "Background request failed or timed out; native fallback remains active",
+          );
           return undefined;
         }
         job.result = result;
@@ -161,11 +207,19 @@ export class BackgroundCompaction {
       .finally(() => clearTimeout(timeout));
   }
 
-  async beforeCompact(event: SessionBeforeCompactEvent, ctx: ExtensionContext): Promise<SessionBeforeCompactResult | undefined> {
+  async beforeCompact(
+    event: SessionBeforeCompactEvent,
+    ctx: ExtensionContext,
+  ): Promise<SessionBeforeCompactResult | undefined> {
     const job = this.job;
     if (!job) return undefined;
-    if (!this.enabled || event.reason !== "threshold" || event.customInstructions !== undefined ||
-        fingerprint(event.preparation.settings) !== fingerprint(job.snapshot.preparation.settings) || !this.valid(job, ctx)) {
+    if (
+      !this.enabled ||
+      event.reason !== "threshold" ||
+      event.customInstructions !== undefined ||
+      fingerprint(event.preparation.settings) !== fingerprint(job.snapshot.preparation.settings) ||
+      !this.valid(job, ctx)
+    ) {
       this.discard(ctx, "Using native compaction for this request");
       return undefined;
     }
@@ -183,17 +237,27 @@ export class BackgroundCompaction {
         this.discard(ctx, "Snapshot changed while waiting");
         return undefined;
       }
-      const accepted = validateResult(job.snapshot, result, ctx.sessionManager.getBranch(), ctx.model?.contextWindow ?? 0, event.preparation.tokensBefore);
+      const accepted = validateResult(
+        job.snapshot,
+        result,
+        ctx.sessionManager.getBranch(),
+        ctx.model?.contextWindow ?? 0,
+        event.preparation.tokensBefore,
+      );
       if (!accepted) {
         this.discard(ctx, "Summary or retained tail exceeds the safe budget");
         return undefined;
       }
       this.job = undefined;
       this.show(ctx, "idle", "Prepared summary supplied to Pi");
-      return { compaction: {
-        ...accepted,
-        details: isFileDetails(accepted.details) ? { ...accepted.details, backgroundCompaction: 1 } : accepted.details,
-      } };
+      return {
+        compaction: {
+          ...accepted,
+          details: isFileDetails(accepted.details)
+            ? { ...accepted.details, backgroundCompaction: 1 }
+            : accepted.details,
+        },
+      };
     } finally {
       event.signal.removeEventListener("abort", abort);
     }

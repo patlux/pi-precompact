@@ -10,7 +10,8 @@ export default function backgroundCompaction(pi: ExtensionAPI): void {
     try {
       controller = new BackgroundCompaction(pi, await loadNativeCompaction());
     } catch {
-      unavailable = "Unsupported Pi installation. Native compaction remains active; Pi 1.4.0 with dist modules is required.";
+      unavailable =
+        "Unsupported Pi installation. Native compaction remains active; Pi 1.4.0 with dist modules is required.";
       if (ctx.hasUI) ctx.ui.notify(unavailable, "warning");
     }
   });
@@ -20,7 +21,7 @@ export default function backgroundCompaction(pi: ExtensionAPI): void {
       return;
     }
     // Other boundary extensions may be about to rewrite this context.
-    if (event.entries.some(entry => entry.type === "context_edit" || entry.type === "compaction")) {
+    if (event.entries.some((entry) => entry.type === "context_edit" || entry.type === "compaction")) {
       controller?.reset(ctx, "Another extension is changing the context");
       return;
     }
@@ -32,7 +33,9 @@ export default function backgroundCompaction(pi: ExtensionAPI): void {
     return controller?.beforeCompact(event, ctx);
   });
   pi.on("session_compact", (_event, ctx) => controller?.reset(ctx, "Compaction completed"));
-  pi.on("session_compact_failed", (_event, ctx) => controller?.reset(ctx, "Foreground compaction failed or cancelled"));
+  pi.on("session_compact_failed", (_event, ctx) =>
+    controller?.reset(ctx, "Foreground compaction failed or cancelled"),
+  );
   pi.on("model_select", (_event, ctx) => controller?.reset(ctx, "Model changed"));
   pi.on("thinking_level_select", (_event, ctx) => controller?.reset(ctx, "Thinking level changed"));
   pi.on("session_before_switch", (_event, ctx) => controller?.reset(ctx, "Session switching"));

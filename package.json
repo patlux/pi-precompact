@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "description": "Precompute Pi compaction summaries without interrupting the agent.",
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "author": "Patrick Wozniak",
   "license": "MIT",
   "private": true,
   "engines": {
@@ -10,7 +14,9 @@
   },
   "keywords": [
     "pi-package",
-    "pi-extension"
+    "pi-extension",
+    "pi",
+    "compaction"
   ],
   "pi": {
     "extensions": [
@@ -20,12 +26,15 @@
   "files": [
     "src",
     "README.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
     "LICENSE"
   ],
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "1.4.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.4.16",
     "@earendil-works/pi-ai": "1.4.0",
     "@earendil-works/pi-coding-agent": "1.4.0",
     "@types/node": "^22.19.0",
@@ -35,6 +44,16 @@
   "scripts": {
     "test": "node --import tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm test"
+    "lint": "biome check --error-on-warnings .",
+    "format": "biome check --write .",
+    "changeset": "python3 scripts/changeset.py add",
+    "changeset:status": "python3 scripts/changeset.py status",
+    "changeset:test": "python3 -B scripts/test_changeset.py -v",
+    "hooks:install": "python3 scripts/changeset.py install-hook",
+    "version:prepare": "python3 scripts/changeset.py version",
+    "release:check": "python3 scripts/changeset.py release-ready && npm run check",
+    "prepublishOnly": "npm run release:check",
+    "pack:dry": "npm pack --dry-run --ignore-scripts",
+    "check": "npm run lint && npm run typecheck && npm test && npm run changeset:test && npm run changeset:status"
   }
 }
