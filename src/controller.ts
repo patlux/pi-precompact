@@ -84,11 +84,19 @@ export class BackgroundCompaction {
   private show(ctx: ExtensionContext, state: State, reason: string): void {
     this.state = state;
     this.last = reason;
-    if (ctx.mode === "tui")
-      ctx.ui.setStatus(
-        "background-compaction",
-        state === "running" || state === "ready" ? `compact: ${state}` : undefined,
-      );
+    this.refreshStatus(ctx);
+  }
+
+  refreshStatus(ctx: ExtensionContext): void {
+    if (ctx.mode !== "tui") return;
+    const settings = SettingsManager.inMemory(this.pi.getSettings()).getCompactionSettings(ctx.model);
+    const label =
+      !this.enabled || !settings.enabled
+        ? "off"
+        : !ctx.model || ctx.model.api === "pi-virtual"
+          ? "unavailable"
+          : this.state;
+    ctx.ui.setStatus("background-compaction", `bg compact: ${label}`);
   }
 
   private identity(ctx: ExtensionContext): string {

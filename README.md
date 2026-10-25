@@ -36,8 +36,23 @@ Commands:
 ```
 
 These commands affect only the current session. `reset` cancels the prepared job and clears the failure counter.
-The TUI footer shows `compact: running` or `compact: ready` while a job exists.
-To stop use permanently, omit the extension argument from the next Pi launch.
+The TUI footer keeps a separate background-compaction status visible from session start:
+
+| Footer | Meaning |
+| --- | --- |
+| `bg compact: idle` | Enabled; no summary is in progress. |
+| `bg compact: running` | Preparing a summary while the agent continues. |
+| `bg compact: ready` | Holding a summary until Pi requests threshold compaction. |
+| `bg compact: paused` | Two background requests failed; native compaction remains available. |
+| `bg compact: off` | Disabled for this session, or native auto-compaction is disabled. |
+| `bg compact: unavailable` | Unsupported Pi installation, virtual model, or no model selected. |
+
+Use `/background-compaction status` for the last event and failure count.
+Pi's `(auto)` context indicator refers to native automatic compaction, not this plugin.
+The plugin uses the shared footer status API; it does not replace the footer or add a widget.
+JSON, print, and RPC modes receive no terminal status. Shutdown and reload clear this plugin's status only.
+
+To stop use permanently, remove its package declaration, or omit the extension argument if you loaded it only for one invocation.
 
 ## Scheduling
 

@@ -45,7 +45,11 @@ export function assistant(text: string, tokens = 79_000) {
   };
 }
 
-export async function fixture(extensions: ExtensionFactory[] = [], additionalExtensionPaths: string[] = []) {
+export async function fixture(
+  extensions: ExtensionFactory[] = [],
+  additionalExtensionPaths: string[] = [],
+  mode: ExtensionContext["mode"] = "json",
+) {
   const dir = await mkdtemp(join(tmpdir(), "pi-background-test-"));
   const provider = fauxProvider({
     provider: "test-background",
@@ -98,7 +102,18 @@ export async function fixture(extensions: ExtensionFactory[] = [], additionalExt
     resourceLoader: loader,
     noTools: "builtin",
   });
-  await session.bindExtensions({ mode: "json", onError: (error) => errors.push(error.error) });
+  const statuses = new Map<string, string>();
+  await session.bindExtensions({
+    mode,
+    uiContext: {
+      ...session.extensionRunner.getUIContext(),
+      setStatus: (key, text) => {
+        if (text === undefined) statuses.delete(key);
+        else statuses.set(key, text);
+      },
+    },
+    onError: (error) => errors.push(error.error),
+  });
   const ctx = session.extensionRunner.createContext();
   const pi = {
     getSettings: () => settings.getSettings(),
@@ -116,6 +131,7 @@ export async function fixture(extensions: ExtensionFactory[] = [], additionalExt
     ctx,
     pi,
     errors,
+    statuses,
     async close() {
       await session.extensionRunner.emit({ type: "session_shutdown", reason: "quit" });
       session.dispose();

@@ -9,7 +9,10 @@ export default function backgroundCompaction(pi: ExtensionAPI): void {
   pi.on("session_start", async (_event, ctx) => {
     try {
       controller = new BackgroundCompaction(pi, await loadNativeCompaction());
+      controller.reset(ctx, "Waiting for enough context");
     } catch {
+      controller = undefined;
+      if (ctx.mode === "tui") ctx.ui.setStatus("background-compaction", "bg compact: unavailable");
       unavailable =
         "Unsupported Pi installation. Native compaction remains active; Pi 1.4.0 with dist modules is required.";
       if (ctx.hasUI) ctx.ui.notify(unavailable, "warning");
@@ -44,6 +47,7 @@ export default function backgroundCompaction(pi: ExtensionAPI): void {
   pi.on("session_shutdown", (_event, ctx) => {
     controller?.reset(ctx, "Session shutdown");
     controller = undefined;
+    if (ctx.mode === "tui") ctx.ui.setStatus("background-compaction", undefined);
   });
   pi.on("agent_settled", (event, ctx) => {
     if (event.aborted) controller?.reset(ctx, "Agent aborted");
@@ -62,6 +66,7 @@ export default function backgroundCompaction(pi: ExtensionAPI): void {
         ctx.ui.notify("Usage: /background-compaction [status|on|off|reset]", "warning");
         return;
       }
+      controller.refreshStatus(ctx);
       ctx.ui.notify(controller.status(), "info");
     },
   });
