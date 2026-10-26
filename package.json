@@ -33,7 +33,9 @@
   "pi": {
     "extensions": [
       "./src/index.ts"
-    ]
+    ],
+    "video": "https://cdn.jsdelivr.net/gh/patlux/pi-precompact@main/docs/media/demo.mp4",
+    "image": "https://cdn.jsdelivr.net/gh/patlux/pi-precompact@main/docs/media/status-card.png"
   },
   "files": [
     "src",

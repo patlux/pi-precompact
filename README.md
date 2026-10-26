@@ -6,6 +6,12 @@ Pi still decides when to compact. The extension supplies a valid prepared summar
 Inspired by [OpenCode background compaction](https://github.com/anomalyco/opencode/pull/57444).
 This is an independent implementation, not an OpenCode port.
 
+![A Pi 1.4.0 session with pi-precompact: the context bar fades in, a summary is prepared while the agent keeps working, and Pi adopts it at its threshold](https://raw.githubusercontent.com/patlux/pi-precompact/main/docs/media/demo.gif)
+
+A real Pi 1.4.0 terminal session with this plugin and a 272k context window.
+A scripted local model from [`demo/`](demo/README.md) reads real files with Pi's `read` tool and reports scripted token usage,
+so the session reaches the thresholds within a minute. The plugin starts at 68%, and Pi compacts at 80%.
+
 ## Status
 
 - Targets `@earendil-works/pi-coding-agent` **1.4.0** only.
@@ -55,6 +61,8 @@ When Pi adopts a background summary, the TUI and RPC clients receive one notice,
 `waited 12s` replaces `no wait` when Pi had to wait for a running request. The token value after `→` is Pi's estimate.
 Native fallback compactions produce no notice.
 
+<img src="https://raw.githubusercontent.com/patlux/pi-precompact/main/docs/media/status-card.png" width="820" alt="The compaction block, the notice for the adopted summary, and the status card in a Pi session">
+
 The plugin sets one footer status from session start, `precompact: <state>`:
 
 | State | Meaning |
@@ -79,6 +87,11 @@ Pi's own context segment stays exactly as Pi renders it. From 100 columns, a con
 - `✓ pre` follows directly after an adopted summary, until the next change.
 - `pre running`, `pre ready` (without an estimate), `pre paused`, `pre off`, and `pre unavailable` name the other states.
 
+<img src="https://raw.githubusercontent.com/patlux/pi-precompact/main/docs/media/footer-states.png" width="690" alt="The statistics line with the context bar in five states: idle, running, ready with the expected context, adopted, and off">
+
+From top to bottom: `idle`, `running`, `ready` with the expected context, an adopted summary, and `off`.
+After a compaction Pi shows `?` until it has measured the next response.
+
 Below 100 columns the line shows `91.6%/272k (auto) pre: ready` instead. When even that does not fit,
 or the footer has an unknown layout, Pi's status row keeps `precompact: <state>`.
 
@@ -91,6 +104,12 @@ With the first measured response, the bar fades in once:
 - The fill grows from 80 to 240 ms. A frame follows every 40 ms; the easing is `cubic-bezier(0.23, 1, 0.32, 1)`.
 - A new width, value, or state during the animation shows the final bar at once.
 - Sessions with earlier responses, for example after `/resume` or `/reload`, show the bar without animation.
+
+<img src="https://raw.githubusercontent.com/patlux/pi-precompact/main/docs/media/reveal.gif" width="690" alt="The context bar fading in after the first measured response, at half speed">
+
+The clip plays at half speed. The strip shows the last frame before the first measured response, then one frame every 40 ms:
+
+<img src="https://raw.githubusercontent.com/patlux/pi-precompact/main/docs/media/reveal-frames.png" width="690" alt="Nine frames of the fade-in: the wave fades the bar in from the left, then the marks appear and the fill grows">
 
 The plugin asks the terminal for its background colour once, as Pi's theme does.
 Without an answer or without truecolor, each glyph appears directly in its colour as the wave reaches it.
@@ -118,7 +137,10 @@ To remove it, run `pi remove npm:pi-precompact`.
 5. At native threshold compaction, validate the snapshot and await its result if necessary.
 6. Return the prepared summary to Pi, or let Pi perform normal compaction.
 
-The ceiling is `contextWindow - reserveTokens`. For a 200,000-token model with a 30,000-token reserve, background work starts at 144,500 tokens.
+The ceiling is `contextWindow - reserveTokens` with Pi's effective reserve.
+Pi 1.4.0 raises the reserve to at least 20% of the context window unless a model override sets it.
+For a 272,000-token model with a reserve setting up to 54,400 tokens, the ceiling is 217,600 tokens:
+background work starts at 184,960 tokens (68%), and Pi compacts above 217,600 tokens (80%).
 Pi's model overrides and adaptive reserves remain authoritative.
 The extension does not start speculative work after the ceiling is already reached.
 
@@ -177,6 +199,7 @@ Persistent omissions and replacements must use Pi's `context_edit` entries.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, Changesets, the commit hook, and the separate release procedure.
 See [CHANGELOG.md](CHANGELOG.md) for release notes.
+The README media come from a real Pi session; [`demo/README.md`](demo/README.md) describes how to record them again.
 
 Prerequisites: Node.js 22.19+, Python 3.11+, Git, npm, Make, and tar.
 

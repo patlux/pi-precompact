@@ -55,7 +55,11 @@ test("actual npm tarball has only runtime files and loads without packaged dev d
   const manifest: unknown = JSON.parse(await readFile(join(temp, "package/package.json"), "utf8"));
   assert.ok(isRecord(manifest));
   assert.equal(manifest.name, "pi-precompact");
-  assert.deepEqual(manifest.pi, { extensions: ["./src/index.ts"] });
+  assert.deepEqual(manifest.pi, {
+    extensions: ["./src/index.ts"],
+    video: "https://cdn.jsdelivr.net/gh/patlux/pi-precompact@main/docs/media/demo.mp4",
+    image: "https://cdn.jsdelivr.net/gh/patlux/pi-precompact@main/docs/media/status-card.png",
+  });
   assert.deepEqual(manifest.exports, { ".": "./src/index.ts" });
   assert.deepEqual(manifest.peerDependencies, {
     "@earendil-works/pi-coding-agent": "1.4.0",
