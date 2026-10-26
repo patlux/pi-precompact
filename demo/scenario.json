@@ -1,0 +1,59 @@
+{
+  "model": {
+    "provider": "demo",
+    "id": "scripted",
+    "name": "scripted",
+    "contextWindow": 272000,
+    "maxTokens": 8192
+  },
+  "settings": {
+    "compaction": {
+      "enabled": true,
+      "reserveTokens": 8192,
+      "keepRecentTokens": 6000
+    },
+    "quietStartup": true,
+    "collapseChangelog": true,
+    "retry": {
+      "enabled": false
+    }
+  },
+  "turns": [
+    {
+      "prompt": "What does this plugin do?",
+      "read": null,
+      "toolTokens": null,
+      "tokens": 34000,
+      "answer": "It prepares Pi's compaction summary in the background while we keep working. When Pi reaches its threshold, it adopts the prepared summary instead of waiting for a new one."
+    },
+    {
+      "prompt": "How does the context bar find Pi's footer?",
+      "read": "src/footer.ts",
+      "toolTokens": 88000,
+      "tokens": 100000,
+      "answer": "A zero-row widget finds the one mounted FooterComponent and wraps the render method of that instance. Pi's own context text stays exactly as Pi renders it; the bar is drawn before it."
+    },
+    {
+      "prompt": "When does a background summary start?",
+      "read": "src/controller.ts",
+      "toolTokens": 160000,
+      "tokens": 190000,
+      "answer": "After a completed turn, once the context reaches 85% of contextWindow minus Pi's reserve. With a 272k window Pi reserves 54,400 tokens, so the summary starts at 68%."
+    },
+    {
+      "prompt": "What is checked before Pi adopts the summary?",
+      "read": "src/validation.ts",
+      "toolTokens": 199000,
+      "tokens": 206000,
+      "answer": "The branch, model, settings and context edits must be unchanged, and the previewed result must fit below the ceiling with a 15% margin. Otherwise Pi compacts normally."
+    },
+    {
+      "prompt": "Show me the cancellation tests.",
+      "read": "test/safety.test.ts",
+      "toolTokens": 212000,
+      "tokens": 224000,
+      "answer": "They cover session replacement, model changes and a cancelled foreground wait. Each case discards the pending summary and leaves compaction to Pi."
+    }
+  ],
+  "summary": "## Goal\nUnderstand how pi-precompact prepares compaction summaries without interrupting the agent.\n\n## Progress\n- The context bar wraps the render method of Pi's mounted FooterComponent; Pi's context text is unchanged.\n- A background summary starts after a completed turn at 85% of contextWindow minus reserveTokens (68% of a 272k window).\n- Before adoption the branch, model, settings and context edits must be unchanged, and the preview must fit below the ceiling with a 15% margin.\n- Session replacement, model changes and cancelled waits discard the pending summary.\n\n## Next steps\n- Summarise the findings for the user."
+}
