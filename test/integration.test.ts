@@ -139,6 +139,41 @@ test("real provider failure falls through to Pi's foreground summary", async (t)
   assert.deepEqual(f.errors, []);
 });
 
+test("TUI: an adopted background summary is announced once; a native fallback is not", async (t) => {
+  const adopted = await fixture([measuredUsage, backgroundCompaction], [], "tui");
+  t.after(() => adopted.close());
+  adopted.provider.setResponses([
+    assistant("First live answer", 79_000),
+    fauxAssistantMessage("Summary of the earlier work."),
+    assistant("Second live answer", 92_000),
+  ]);
+  await adopted.session.prompt("First live instruction");
+  await waitFor(() => adopted.provider.state.callCount === 2);
+  await flush();
+  await adopted.session.prompt("Keep this newer instruction");
+  assert.ok(adopted.manager.getBranch().some((entry) => entry.type === "compaction" && entry.fromHook));
+  const notices = adopted.notices.filter((notice) => notice.startsWith("✓ Background summary applied"));
+  assert.equal(notices.length, 1);
+  assert.match(notices[0], /· (no wait|waited \S+) · \S+ → ~\S+ tokens · prepared in \S+$/);
+  assert.deepEqual(adopted.errors, []);
+
+  const fallback = await fixture([measuredUsage, backgroundCompaction], [], "tui");
+  t.after(() => fallback.close());
+  fallback.provider.setResponses([
+    assistant("First live answer", 79_000),
+    fauxAssistantMessage("", { stopReason: "error", errorMessage: "synthetic failure" }),
+    assistant("Threshold answer", 92_000),
+    fauxAssistantMessage("Native fallback summary"),
+  ]);
+  await fallback.session.prompt("First live instruction");
+  await waitFor(() => fallback.provider.state.callCount === 2);
+  await flush();
+  await fallback.session.prompt("Second live instruction");
+  assert.ok(fallback.manager.getBranch().some((entry) => entry.type === "compaction" && !entry.fromHook));
+  assert.equal(fallback.notices.filter((notice) => notice.includes("Background summary applied")).length, 0);
+  assert.deepEqual(fallback.errors, []);
+});
+
 test("Pi's actual file extension loader resolves the plugin and private native adapter", async (t) => {
   const path = fileURLToPath(new URL("../src/index.ts", import.meta.url));
   const f = await fixture([measuredUsage], [path]);

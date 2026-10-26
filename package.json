@@ -31,12 +31,14 @@
     "LICENSE"
   ],
   "peerDependencies": {
-    "@earendil-works/pi-coding-agent": "1.4.0"
+    "@earendil-works/pi-coding-agent": "1.4.0",
+    "@earendil-works/pi-tui": "1.4.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.16",
     "@earendil-works/pi-ai": "1.4.0",
     "@earendil-works/pi-coding-agent": "1.4.0",
+    "@earendil-works/pi-tui": "1.4.0",
     "@types/node": "^22.19.0",
     "tsx": "4.23.15",
     "typescript": "^5.9.3"

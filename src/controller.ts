@@ -5,9 +5,11 @@ import {
   type ExtensionContext,
   type SessionBeforeCompactEvent,
   type SessionBeforeCompactResult,
+  type SessionCompactEvent,
   SettingsManager,
 } from "@earendil-works/pi-coding-agent";
 import { inheritOwnFiles, isFileDetails } from "./files.ts";
+import { formatDuration, formatTokens } from "./format.ts";
 import type { NativeCompaction } from "./native.ts";
 import { fingerprint, type Snapshot, snapshotValid, validateResult } from "./validation.ts";
 
@@ -22,11 +24,73 @@ export const DEFAULT_OPTIONS: Readonly<Options> = {
   timeoutMs: 120_000,
 };
 type State = "idle" | "running" | "ready" | "paused" | "disabled";
+/** The state shown in the footer and the status card. */
+export type Label = "idle" | "running" | "ready" | "paused" | "off" | "unavailable";
+type Usage = NonNullable<CompactionResult["usage"]>;
+
+/** `pi.events` channel for {@link FooterState}; the footer listens to it. */
+export const STATE_CHANNEL = "background-compaction:state";
+/** Emit on this channel to receive the last {@link FooterState} again. */
+export const REQUEST_CHANNEL = "background-compaction:request";
+
+/**
+ * Versioned footer payload. Shares are fractions of the model's context window.
+ * The plain `bg compact: <state>` status text stays the fallback for other footers.
+ */
+export interface FooterState {
+  version: 1;
+  state: Label;
+  /** The last compaction used a background summary, and nothing happened since. */
+  applied: boolean;
+  /** Where background preparation starts. */
+  start?: number;
+  /** Where Pi compacts natively. */
+  threshold?: number;
+  /** Estimated context after Pi adopts the held summary (ready only). */
+  after?: number;
+}
+
+export interface Applied {
+  tokensBefore: number;
+  tokensAfter: number;
+  preparedMs: number;
+  waitedMs: number;
+  at: number;
+  usage?: Usage;
+}
+
+/** Everything the status card shows. */
+export interface StatusDetails {
+  label: Label;
+  reason: string;
+  failures: number;
+  enabled: boolean;
+  context?: { tokens: number | null; window: number; percent: number | null };
+  start?: number;
+  threshold?: number;
+  job?: { phase: "running" | "ready"; startedAt: number; readyAt?: number; estimate?: number; usage?: Usage };
+  applied?: Applied;
+}
+
 interface Job {
   snapshot: Snapshot;
   controller: AbortController;
   promise: Promise<CompactionResult | undefined>;
   result?: CompactionResult;
+  startedAt: number;
+  readyAt?: number;
+  /** Estimated context tokens after adoption, refreshed while the result is held. */
+  estimate?: number;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+/** The single-line notice after Pi adopted a background summary. */
+export function appliedNotice(applied: Applied): string {
+  const wait = applied.waitedMs < 1000 ? "no wait" : `waited ${formatDuration(applied.waitedMs)}`;
+  return `✓ Background summary applied · ${wait} · ${formatTokens(applied.tokensBefore)} → ~${formatTokens(applied.tokensAfter)} tokens · prepared in ${formatDuration(applied.preparedMs)}`;
 }
 
 /** A bounded wait even if a provider does not settle its promise on abort. */
@@ -50,9 +114,13 @@ export class BackgroundCompaction {
   private enabled = true;
   private last = "Waiting for enough context";
   private state: State = "idle";
+  private pendingApplied?: Applied;
+  private applied?: Applied;
+  private showApplied = false;
+  private footer?: FooterState;
 
   constructor(
-    private readonly pi: Pick<ExtensionAPI, "getSettings" | "appendEntry">,
+    private readonly pi: Pick<ExtensionAPI, "getSettings" | "appendEntry" | "events">,
     private readonly native: NativeCompaction,
     private readonly options: Options = DEFAULT_OPTIONS,
   ) {
@@ -76,27 +144,118 @@ export class BackgroundCompaction {
   }
 
   reset(ctx: ExtensionContext, reason = "Session changed"): void {
+    this.pendingApplied = undefined;
     this.discard(ctx, reason);
     this.failures = 0;
     this.show(ctx, this.enabled ? "idle" : "disabled", reason);
   }
 
+  /**
+   * Called on `session_compact`. Returns the notice when Pi adopted this plugin's summary.
+   * The footer keeps the applied mark until the next state change.
+   */
+  compacted(event: SessionCompactEvent, ctx: ExtensionContext): string | undefined {
+    const applied = this.pendingApplied;
+    this.reset(ctx, "Compaction completed");
+    const details = event.compactionEntry.details;
+    if (!applied || !isRecord(details) || details.backgroundCompaction !== 1) return undefined;
+    this.applied = applied;
+    this.showApplied = true;
+    this.last = "Prepared summary applied";
+    this.refreshStatus(ctx);
+    return appliedNotice(applied);
+  }
+
   private show(ctx: ExtensionContext, state: State, reason: string): void {
     this.state = state;
     this.last = reason;
+    this.showApplied = false;
     this.refreshStatus(ctx);
+  }
+
+  private label(ctx: ExtensionContext): Label {
+    const settings = SettingsManager.inMemory(this.pi.getSettings()).getCompactionSettings(ctx.model);
+    if (!this.enabled || !settings.enabled) return "off";
+    if (!ctx.model || ctx.model.api === "pi-virtual") return "unavailable";
+    return this.state === "disabled" ? "off" : this.state;
+  }
+
+  /** Start and native threshold as shares of the context window, when known. */
+  private shares(ctx: ExtensionContext, label: Label): { start?: number; threshold?: number } {
+    const model = ctx.model;
+    if (!model || model.api === "pi-virtual" || !(model.contextWindow > 0)) return {};
+    const settings = SettingsManager.inMemory(this.pi.getSettings()).getCompactionSettings(model);
+    const ceiling = model.contextWindow - settings.reserveTokens;
+    if (!settings.enabled || !(ceiling > 0)) return {};
+    const threshold = ceiling / model.contextWindow;
+    return label === "off" ? { threshold } : { start: threshold * this.options.startRatio, threshold };
   }
 
   refreshStatus(ctx: ExtensionContext): void {
     if (ctx.mode !== "tui") return;
-    const settings = SettingsManager.inMemory(this.pi.getSettings()).getCompactionSettings(ctx.model);
-    const label =
-      !this.enabled || !settings.enabled
-        ? "off"
-        : !ctx.model || ctx.model.api === "pi-virtual"
-          ? "unavailable"
-          : this.state;
+    const label = this.label(ctx);
+    const footer: FooterState = {
+      version: 1,
+      state: label,
+      applied: label === "idle" && this.showApplied,
+      ...this.shares(ctx, label),
+    };
+    const window = ctx.model?.contextWindow ?? 0;
+    if (label === "ready" && this.job?.estimate !== undefined && window > 0)
+      footer.after = this.job.estimate / window;
+    this.footer = footer;
+    // Publish structured data first: setStatus triggers the render that reads it.
+    this.pi.events.emit(STATE_CHANNEL, footer);
     ctx.ui.setStatus("background-compaction", `bg compact: ${label}`);
+  }
+
+  /** Answer a footer that subscribed after the last change. */
+  republish(): void {
+    if (this.footer) this.pi.events.emit(STATE_CHANNEL, this.footer);
+  }
+
+  details(ctx: ExtensionContext): StatusDetails {
+    const label = this.label(ctx);
+    const usage = ctx.getContextUsage();
+    const job = this.job;
+    return {
+      label,
+      reason: this.last,
+      failures: this.failures,
+      enabled: this.enabled,
+      ...(usage
+        ? { context: { tokens: usage.tokens, window: usage.contextWindow, percent: usage.percent } }
+        : {}),
+      ...this.shares(ctx, label),
+      ...(job
+        ? {
+            job: {
+              phase: job.result ? "ready" : "running",
+              startedAt: job.startedAt,
+              readyAt: job.readyAt,
+              estimate: job.estimate,
+              usage: job.result?.usage,
+            },
+          }
+        : {}),
+      ...(this.showApplied && this.applied ? { applied: this.applied } : {}),
+    };
+  }
+
+  /** Preview the held result against the current branch. Undefined means Pi would reject it. */
+  private estimate(job: Job, result: CompactionResult, ctx: ExtensionContext): number | undefined {
+    try {
+      const tokens = ctx.getContextUsage()?.tokens ?? job.snapshot.preparation.tokensBefore;
+      return validateResult(
+        job.snapshot,
+        result,
+        ctx.sessionManager.getBranch(),
+        ctx.model?.contextWindow ?? 0,
+        tokens,
+      )?.estimatedTokensAfter;
+    } catch {
+      return undefined;
+    }
   }
 
   private identity(ctx: ExtensionContext): string {
@@ -141,6 +300,15 @@ export class BackgroundCompaction {
       return;
     }
     if (this.job && !this.valid(this.job, ctx)) this.discard(ctx, "Snapshot invalidated");
+    const held = this.job;
+    if (held?.result) {
+      // Newer history stays in the retained tail, so the expected result grows.
+      const estimate = this.estimate(held, held.result, ctx);
+      if (estimate !== held.estimate) {
+        held.estimate = estimate;
+        this.refreshStatus(ctx);
+      }
+    }
     if (this.job || this.failures >= 2) return;
     const usage = ctx.getContextUsage();
     const ceiling = model.contextWindow - settings.reserveTokens;
@@ -173,7 +341,7 @@ export class BackgroundCompaction {
       preparation: structuredClone(preparation),
     };
     const controller = new AbortController();
-    const job: Job = { snapshot, controller, promise: Promise.resolve(undefined) };
+    const job: Job = { snapshot, controller, promise: Promise.resolve(undefined), startedAt: Date.now() };
     this.job = job;
     this.show(ctx, "running", "Preparing a native summary");
     const timeout = setTimeout(() => controller.abort(), this.options.timeoutMs);
@@ -209,6 +377,8 @@ export class BackgroundCompaction {
           return undefined;
         }
         job.result = result;
+        job.readyAt = Date.now();
+        job.estimate = this.estimate(job, result, ctx);
         this.show(ctx, "ready", "Summary held until native threshold compaction");
         return result;
       })
@@ -237,8 +407,10 @@ export class BackgroundCompaction {
       return undefined;
     }
     event.signal.addEventListener("abort", abort, { once: true });
+    const waitStart = Date.now();
     try {
       const result = await job.promise;
+      const waitedMs = Date.now() - waitStart;
       // Revalidate after awaiting: edits, switches, and model changes may race it.
       if (event.signal.aborted || this.job !== job || !result) return undefined;
       if (!this.valid(job, ctx)) {
@@ -258,6 +430,14 @@ export class BackgroundCompaction {
       }
       this.job = undefined;
       this.show(ctx, "idle", "Prepared summary supplied to Pi");
+      this.pendingApplied = {
+        tokensBefore: event.preparation.tokensBefore,
+        tokensAfter: accepted.estimatedTokensAfter ?? event.preparation.tokensBefore,
+        preparedMs: (job.readyAt ?? Date.now()) - job.startedAt,
+        waitedMs,
+        at: Date.now(),
+        usage: accepted.usage,
+      };
       return {
         compaction: {
           ...accepted,

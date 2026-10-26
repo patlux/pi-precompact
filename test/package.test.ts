@@ -42,8 +42,10 @@ test("actual npm tarball has only runtime files and loads without packaged dev d
     "LICENSE",
     "README.md",
     "package.json",
+    "src/card.ts",
     "src/controller.ts",
     "src/files.ts",
+    "src/format.ts",
     "src/index.ts",
     "src/native.ts",
     "src/validation.ts",
@@ -54,7 +56,10 @@ test("actual npm tarball has only runtime files and loads without packaged dev d
   assert.equal(manifest.name, "pi-background-compaction");
   assert.deepEqual(manifest.pi, { extensions: ["./src/index.ts"] });
   assert.deepEqual(manifest.exports, { ".": "./src/index.ts" });
-  assert.deepEqual(manifest.peerDependencies, { "@earendil-works/pi-coding-agent": "1.4.0" });
+  assert.deepEqual(manifest.peerDependencies, {
+    "@earendil-works/pi-coding-agent": "1.4.0",
+    "@earendil-works/pi-tui": "1.4.0",
+  });
   assert.equal(manifest.dependencies, undefined);
   const f = await fixture([], [join(temp, "package/src/index.ts")]);
   t.after(() => f.close());

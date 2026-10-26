@@ -1,11 +1,13 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { BackgroundCompaction } from "./controller.ts";
+import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
+import { statusCard } from "./card.ts";
+import { BackgroundCompaction, REQUEST_CHANNEL } from "./controller.ts";
 import { inheritOwnFiles } from "./files.ts";
 import { loadNativeCompaction } from "./native.ts";
 
 export default function backgroundCompaction(pi: ExtensionAPI): void {
   let controller: BackgroundCompaction | undefined;
   let unavailable = "Not started";
+  const unsubscribe = pi.events.on(REQUEST_CHANNEL, () => controller?.republish());
   pi.on("session_start", async (_event, ctx) => {
     try {
       controller = new BackgroundCompaction(pi, await loadNativeCompaction());
@@ -35,7 +37,10 @@ export default function backgroundCompaction(pi: ExtensionAPI): void {
     inheritOwnFiles(event.preparation, event.branchEntries);
     return controller?.beforeCompact(event, ctx);
   });
-  pi.on("session_compact", (_event, ctx) => controller?.reset(ctx, "Compaction completed"));
+  pi.on("session_compact", (event, ctx) => {
+    const notice = controller?.compacted(event, ctx);
+    if (notice && ctx.hasUI) ctx.ui.notify(notice, "info");
+  });
   pi.on("session_compact_failed", (_event, ctx) =>
     controller?.reset(ctx, "Foreground compaction failed or cancelled"),
   );
@@ -47,6 +52,7 @@ export default function backgroundCompaction(pi: ExtensionAPI): void {
   pi.on("session_shutdown", (_event, ctx) => {
     controller?.reset(ctx, "Session shutdown");
     controller = undefined;
+    unsubscribe();
     if (ctx.mode === "tui") ctx.ui.setStatus("background-compaction", undefined);
   });
   pi.on("agent_settled", (event, ctx) => {
@@ -67,7 +73,25 @@ export default function backgroundCompaction(pi: ExtensionAPI): void {
         return;
       }
       controller.refreshStatus(ctx);
-      ctx.ui.notify(controller.status(), "info");
+      // The card appears only when the user explicitly asks for the status.
+      if (action === "status" && ctx.mode === "tui") await showCard(controller, ctx);
+      else ctx.ui.notify(controller.status(), "info");
     },
   });
+}
+
+async function showCard(controller: BackgroundCompaction, ctx: ExtensionCommandContext): Promise<void> {
+  await ctx.ui.custom<void>((tui, theme, keybindings, done) =>
+    statusCard(
+      {
+        details: () => controller.details(ctx),
+        reset: () => controller.reset(ctx, "Manually reset"),
+        setEnabled: (enabled) => controller.setEnabled(enabled, ctx),
+      },
+      tui,
+      theme,
+      keybindings,
+      () => done(undefined),
+    ),
+  );
 }

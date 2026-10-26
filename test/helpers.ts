@@ -10,6 +10,7 @@ import {
 import {
   type CompactionResult,
   createAgentSession,
+  createEventBus,
   DefaultResourceLoader,
   type ExtensionContext,
   type ExtensionFactory,
@@ -77,10 +78,12 @@ export async function fixture(
   manager.appendMessage(assistant(`Old work ${"b".repeat(8_000)}`));
   manager.appendMessage({ role: "user", content: `Retain this request ${"c".repeat(4_000)}`, timestamp: 2 });
   manager.appendMessage(assistant("Recent answer"));
+  const events = createEventBus();
   const loader = new DefaultResourceLoader({
     cwd: dir,
     agentDir: join(dir, "agent"),
     settingsManager: settings,
+    eventBus: events,
     noExtensions: true,
     noSkills: true,
     noPromptTemplates: true,
@@ -103,13 +106,22 @@ export async function fixture(
     noTools: "builtin",
   });
   const statuses = new Map<string, string>();
+  const notices: string[] = [];
+  const opened = { cards: 0 };
+  const uiContext = session.extensionRunner.getUIContext();
   await session.bindExtensions({
     mode,
     uiContext: {
-      ...session.extensionRunner.getUIContext(),
+      ...uiContext,
       setStatus: (key, text) => {
         if (text === undefined) statuses.delete(key);
         else statuses.set(key, text);
+      },
+      notify: (message) => notices.push(message),
+      // Without a terminal Pi's context resolves `custom` immediately. Count the requests.
+      custom: (factory, options) => {
+        opened.cards++;
+        return uiContext.custom(factory, options);
       },
     },
     onError: (error) => errors.push(error.error),
@@ -120,6 +132,7 @@ export async function fixture(
     appendEntry: <T>(type: string, data?: T) => {
       manager.appendCustomEntry(type, data);
     },
+    events,
   };
   return {
     dir,
@@ -132,6 +145,9 @@ export async function fixture(
     pi,
     errors,
     statuses,
+    notices,
+    events,
+    opened,
     async close() {
       await session.extensionRunner.emit({ type: "session_shutdown", reason: "quit" });
       session.dispose();

@@ -36,6 +36,21 @@ Commands:
 ```
 
 These commands affect only the current session. `reset` cancels the prepared job and clears the failure counter.
+
+`/background-compaction` and `/background-compaction status` open a status card in the TUI, in place of the editor.
+The card appears only on this explicit request. It shows the state and last event, a context bar with the plugin's start and Pi's threshold,
+the expected result of a held summary, the request usage, and the failure count. It updates every second.
+Press `r` to reset, `o` to switch off or on, and Escape or Enter to close. RPC, JSON, and print modes keep the one-line answer.
+
+When Pi adopts a background summary, the TUI and RPC clients receive one notice, for example:
+
+```text
+✓ Background summary applied · no wait · 249k → ~38k tokens · prepared in 48s
+```
+
+`waited 12s` replaces `no wait` when Pi had to wait for a running request. The token value after `→` is Pi's estimate.
+Native fallback compactions produce no notice.
+
 The TUI footer keeps a separate background-compaction status visible from session start:
 
 | Footer | Meaning |
@@ -50,6 +65,18 @@ The TUI footer keeps a separate background-compaction status visible from sessio
 Use `/background-compaction status` for the last event and failure count.
 Pi's `(auto)` context indicator refers to native automatic compaction, not this plugin.
 The plugin uses the shared footer status API; it does not replace the footer or add a widget.
+
+For richer footers, the plugin also publishes a versioned payload on `pi.events` before each status update:
+
+| Channel | Payload |
+| --- | --- |
+| `background-compaction:state` | `{ version: 1, state, applied, start?, threshold?, after? }` |
+| `background-compaction:request` | Emit anything; the plugin sends the last state again. |
+
+`state` is one of the six footer states. `applied` is true after Pi adopted a background summary, until the next change.
+`start`, `threshold`, and `after` are shares of the context window: where background work starts, where Pi compacts,
+and the estimated context after adoption (only while `ready`). The plain status text stays the fallback.
+[pi-session-id-footer](../pi-session-id-footer) renders this payload as a context bar beside Pi's `(auto)`.
 JSON, print, and RPC modes receive no terminal status. Shutdown and reload clear this plugin's status only.
 
 To stop use permanently, remove its package declaration, or omit the extension argument if you loaded it only for one invocation.
@@ -158,6 +185,8 @@ Source:
 - `/Users/patwoz/dev/Personal/pi/pi-background-compaction/src/native.ts`: version-guarded native adapter.
 - `/Users/patwoz/dev/Personal/pi/pi-background-compaction/src/validation.ts`: branch validation and context preview.
 - `/Users/patwoz/dev/Personal/pi/pi-background-compaction/src/files.ts`: file-metadata inheritance for Pi 1.4.0.
+- `/Users/patwoz/dev/Personal/pi/pi-background-compaction/src/card.ts`: the status card for `/background-compaction status`.
+- `/Users/patwoz/dev/Personal/pi/pi-background-compaction/src/format.ts`: token, duration, and share formatting.
 
 ## Apply / deploy
 
