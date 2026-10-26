@@ -78,6 +78,21 @@ Pi's own context segment stays exactly as Pi renders it. From 100 columns, a con
 Below 100 columns the line shows `91.6%/272k (auto) bg: ready` instead. When even that does not fit,
 or the footer has an unknown layout, Pi's status row keeps `bg compact: <state>`.
 
+Before the first response with token usage, Pi shows only its context value and no usage numbers.
+The plugin then shows nothing either: no bar, no `bg` text, and no status row entry.
+With the first measured response, the bar fades in once:
+
+- Pi's numbers appear at once; the bar reserves its columns in the same frame.
+- Each glyph fades from the terminal background to its colour in 120 ms, 5 ms after its left neighbour.
+- The fill grows from 80 to 240 ms. A frame follows every 40 ms; the easing is `cubic-bezier(0.23, 1, 0.32, 1)`.
+- A new width, value, or state during the animation shows the final bar at once.
+- Sessions with earlier responses, for example after `/resume` or `/reload`, show the bar without animation.
+
+The plugin asks the terminal for its background colour once, as Pi's theme does.
+Without an answer or without truecolor, each glyph appears directly in its colour as the wave reaches it.
+Set `PI_BACKGROUND_COMPACTION_MOTION=off` before starting Pi to show the bar without animation.
+The design is on pages 04 and 05 of `design/figcraft/footer-status.figcraft`.
+
 Use `/background-compaction status` for the last event and failure count.
 Pi's `(auto)` context indicator refers to native automatic compaction, not this plugin.
 

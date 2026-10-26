@@ -17,7 +17,10 @@ export default function backgroundCompaction(pi: ExtensionAPI): void {
       controller = started;
       started.reset(ctx, "Waiting for enough context");
       // Draw the status beside Pi's context usage. Pi's status row stays the fallback.
-      if (ctx.mode === "tui") detachFooter = attachFooter(ctx, () => started.footerState());
+      if (ctx.mode === "tui") {
+        const motion = process.env.PI_BACKGROUND_COMPACTION_MOTION !== "off";
+        detachFooter = attachFooter(ctx, () => started.footerState(), { motion });
+      }
     } catch {
       controller = undefined;
       if (ctx.mode === "tui") ctx.ui.setStatus(STATUS_KEY, "bg compact: unavailable");

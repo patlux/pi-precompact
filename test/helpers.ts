@@ -83,6 +83,7 @@ export async function fixture(
   extensions: ExtensionFactory[] = [],
   additionalExtensionPaths: string[] = [],
   mode: ExtensionContext["mode"] = "json",
+  options: { fresh?: boolean } = {},
 ) {
   const dir = await mkdtemp(join(tmpdir(), "pi-background-test-"));
   const provider = fauxProvider({
@@ -107,10 +108,17 @@ export async function fixture(
   });
   runtime.registerNativeProvider(provider.provider);
   const manager = SessionManager.inMemory(dir);
-  manager.appendMessage({ role: "user", content: `Old task ${"a".repeat(16_000)}`, timestamp: 1 });
-  manager.appendMessage(assistant(`Old work ${"b".repeat(8_000)}`));
-  manager.appendMessage({ role: "user", content: `Retain this request ${"c".repeat(4_000)}`, timestamp: 2 });
-  manager.appendMessage(assistant("Recent answer"));
+  // A fresh session has no measured response yet, like a new Pi session before the first prompt.
+  if (!options.fresh) {
+    manager.appendMessage({ role: "user", content: `Old task ${"a".repeat(16_000)}`, timestamp: 1 });
+    manager.appendMessage(assistant(`Old work ${"b".repeat(8_000)}`));
+    manager.appendMessage({
+      role: "user",
+      content: `Retain this request ${"c".repeat(4_000)}`,
+      timestamp: 2,
+    });
+    manager.appendMessage(assistant("Recent answer"));
+  }
   const loader = new DefaultResourceLoader({
     cwd: dir,
     agentDir: join(dir, "agent"),
