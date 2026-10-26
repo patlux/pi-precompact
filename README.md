@@ -6,8 +6,7 @@ Pi still decides when to compact. The extension supplies a valid prepared summar
 Inspired by [OpenCode background compaction](https://github.com/anomalyco/opencode/pull/57444).
 This is an independent implementation, not an OpenCode port.
 
-The project was developed locally as `pi-background-compaction`. That npm name belongs to an unrelated package.
-Compactions written by `pi-background-compaction` carried a different marker; this version does not recognise them.
+Not related to the npm package `pi-background-compaction`.
 
 ## Status
 
@@ -18,15 +17,19 @@ Compactions written by `pi-background-compaction` carried a different marker; th
 - Has deterministic unit tests and SDK integration tests with Pi's local Faux provider.
 - Has no live-provider endurance or latency benchmark yet.
 
-## Try it in one session
-
-Start a separate Pi session with the explicit extension path:
+## Install
 
 ```sh
-pi --extension /Users/patwoz/dev/Personal/pi/pi-precompact/src/index.ts
+pi install npm:pi-precompact
 ```
 
-The extension becomes active when that session starts. It does not change existing sessions.
+New sessions load the extension. Run `/reload` in a session that is already open.
+To try it for one invocation without changing settings:
+
+```sh
+pi -e npm:pi-precompact
+```
+
 Do not combine it with another extension that replaces compaction.
 
 Commands:
@@ -106,7 +109,7 @@ Other footer decorators can wrap the same instance before or after it; each keep
 Custom footers are left alone. Shutdown and reload restore Pi's method and clear this plugin's status only.
 JSON, print, and RPC modes receive no terminal status or footer decoration.
 
-To stop use permanently, remove its package declaration, or omit the extension argument if you loaded it only for one invocation.
+To remove it, run `pi remove npm:pi-precompact`.
 
 ## Scheduling
 
@@ -175,30 +178,30 @@ Persistent omissions and replacements must use Pi's `context_edit` entries.
 ## Development
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, Changesets, the commit hook, and the separate release procedure.
-See [CHANGELOG.md](CHANGELOG.md) for the local development history.
+See [CHANGELOG.md](CHANGELOG.md) for release notes.
 
 Prerequisites: Node.js 22.19+, Python 3.11+, Git, npm, Make, and tar.
 
-Install the locked development dependencies:
+From the repository root, install the locked development dependencies:
 
 ```sh
-npm --prefix /Users/patwoz/dev/Personal/pi/pi-precompact ci --ignore-scripts
+npm ci --ignore-scripts
 ```
 
 Install the changeset hook once per clone:
 
 ```sh
-make -C /Users/patwoz/dev/Personal/pi/pi-precompact hooks-install
+make hooks-install
 ```
 
 Run the same checks as CI:
 
 ```sh
-npm --prefix /Users/patwoz/dev/Personal/pi/pi-precompact run check
+npm run check
 ```
 
 This checks formatting, lint, types, runtime tests, the actual npm tarball, and the Changesets flow.
-The CI definition covers Linux/macOS and Node.js 22/24. Hosted CI needs a remote and has not run yet.
+CI runs these checks on Linux and macOS with Node.js 22 and 24.
 
 Tests use temporary directories, in-memory credentials, in-memory sessions, and a local scripted provider.
 They do not load personal extensions, read real credential files, or call a remote model.
@@ -207,16 +210,11 @@ They exercise real extension loading, provider streaming, tool-driven turns, thr
 
 Source:
 
-- `/Users/patwoz/dev/Personal/pi/pi-precompact/src/index.ts`: lifecycle hooks and commands.
-- `/Users/patwoz/dev/Personal/pi/pi-precompact/src/controller.ts`: job scheduling and cancellation.
-- `/Users/patwoz/dev/Personal/pi/pi-precompact/src/native.ts`: version-guarded native adapter.
-- `/Users/patwoz/dev/Personal/pi/pi-precompact/src/validation.ts`: branch validation and context preview.
-- `/Users/patwoz/dev/Personal/pi/pi-precompact/src/files.ts`: file-metadata inheritance for Pi 1.4.0.
-- `/Users/patwoz/dev/Personal/pi/pi-precompact/src/card.ts`: the status card for `/precompact status`.
-- `/Users/patwoz/dev/Personal/pi/pi-precompact/src/footer.ts`: the context bar in Pi's built-in footer.
-- `/Users/patwoz/dev/Personal/pi/pi-precompact/src/format.ts`: token, duration, and share formatting.
-
-## Apply / deploy
-
-No system deployment is necessary. The explicit `pi --extension` command above activates this plugin only in that new session.
-The repository is local and unpublished. Global installation and Nix activation are separate operations.
+- `src/index.ts`: lifecycle hooks and commands.
+- `src/controller.ts`: job scheduling and cancellation.
+- `src/native.ts`: version-guarded native adapter.
+- `src/validation.ts`: branch validation and context preview.
+- `src/files.ts`: file-metadata inheritance for Pi 1.4.0.
+- `src/card.ts`: the status card for `/precompact status`.
+- `src/footer.ts`: the context bar in Pi's built-in footer.
+- `src/format.ts`: token, duration, and share formatting.

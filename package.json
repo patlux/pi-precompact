@@ -8,9 +8,21 @@
   },
   "author": "Patrick Wozniak",
   "license": "MIT",
-  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/patlux/pi-precompact.git"
+  },
+  "homepage": "https://github.com/patlux/pi-precompact#readme",
+  "bugs": {
+    "url": "https://github.com/patlux/pi-precompact/issues"
+  },
+  "private": false,
   "engines": {
     "node": ">=22.19.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "keywords": [
     "pi-package",

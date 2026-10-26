@@ -35,10 +35,10 @@ Der Code ist die Quelle. Ändert sich dort etwas, wird die Datei nachgezogen, ni
 
 ## Arbeiten mit der Datei
 
-Vorher `/Users/patwoz/dev/agents/skills/figcraft/SKILL.md` lesen und den MCP-Server `figcraft` benutzen.
+Mit dem MCP-Server `figcraft` der FigCraft-App arbeiten.
 
 1. `list_windows`. Kein Fenster nehmen, das eine andere Session benutzt.
-2. `open_window {path: "/Users/patwoz/dev/Personal/pi/pi-precompact/design/figcraft/footer-status.figcraft"}`.
+2. `open_window` mit dem absoluten Pfad dieser `footer-status.figcraft`.
    Das fokussierte FigCraft-Fenster muss dafür sichtbar sein.
 3. Neue Terminalzeilen spaltengenau bauen: ein Textlayer pro Zeile, Farben per `selection.setPaint` mit `range`.
 4. Prüfen mit `outline`, `lint_layout` und `screenshot`. Speichern mit `save_file` und danach `file_status`

@@ -1,7 +1,7 @@
 # Changelog
 
 Versions follow SemVer. Future entries come from Markdown changesets.
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the local release workflow.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the release workflow.
 
 ## 0.1.0 - 2026-10-25
 
