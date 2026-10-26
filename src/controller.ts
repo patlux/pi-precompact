@@ -28,17 +28,11 @@ type State = "idle" | "running" | "ready" | "paused" | "disabled";
 export type Label = "idle" | "running" | "ready" | "paused" | "off" | "unavailable";
 type Usage = NonNullable<CompactionResult["usage"]>;
 
-/** `pi.events` channel for {@link FooterState}; the footer listens to it. */
-export const STATE_CHANNEL = "background-compaction:state";
-/** Emit on this channel to receive the last {@link FooterState} again. */
-export const REQUEST_CHANNEL = "background-compaction:request";
-
 /**
- * Versioned footer payload. Shares are fractions of the model's context window.
+ * What the footer draws. Shares are fractions of the model's context window.
  * The plain `bg compact: <state>` status text stays the fallback for other footers.
  */
 export interface FooterState {
-  version: 1;
   state: Label;
   /** The last compaction used a background summary, and nothing happened since. */
   applied: boolean;
@@ -120,7 +114,7 @@ export class BackgroundCompaction {
   private footer?: FooterState;
 
   constructor(
-    private readonly pi: Pick<ExtensionAPI, "getSettings" | "appendEntry" | "events">,
+    private readonly pi: Pick<ExtensionAPI, "getSettings" | "appendEntry">,
     private readonly native: NativeCompaction,
     private readonly options: Options = DEFAULT_OPTIONS,
   ) {
@@ -195,7 +189,6 @@ export class BackgroundCompaction {
     if (ctx.mode !== "tui") return;
     const label = this.label(ctx);
     const footer: FooterState = {
-      version: 1,
       state: label,
       applied: label === "idle" && this.showApplied,
       ...this.shares(ctx, label),
@@ -203,15 +196,14 @@ export class BackgroundCompaction {
     const window = ctx.model?.contextWindow ?? 0;
     if (label === "ready" && this.job?.estimate !== undefined && window > 0)
       footer.after = this.job.estimate / window;
+    // Store the footer data first: setStatus triggers the render that reads it.
     this.footer = footer;
-    // Publish structured data first: setStatus triggers the render that reads it.
-    this.pi.events.emit(STATE_CHANNEL, footer);
     ctx.ui.setStatus("background-compaction", `bg compact: ${label}`);
   }
 
-  /** Answer a footer that subscribed after the last change. */
-  republish(): void {
-    if (this.footer) this.pi.events.emit(STATE_CHANNEL, this.footer);
+  /** The last footer data; undefined outside the TUI. */
+  footerState(): FooterState | undefined {
+    return this.footer;
   }
 
   details(ctx: ExtensionContext): StatusDetails {

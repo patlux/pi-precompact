@@ -1,34 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { CompactionResult, EventBus, SessionCompactEvent } from "@earendil-works/pi-coding-agent";
-import { BackgroundCompaction, REQUEST_CHANNEL, STATE_CHANNEL } from "../src/controller.ts";
+import type { CompactionResult, SessionCompactEvent } from "@earendil-works/pi-coding-agent";
+import { BackgroundCompaction } from "../src/controller.ts";
 import backgroundCompaction from "../src/index.ts";
 import { beforeEvent, deferred, fixture, flush, native, result } from "./helpers.ts";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-/** Collects footer payloads as plain records. */
-function collect(events: EventBus): Record<string, unknown>[] {
-  const seen: Record<string, unknown>[] = [];
-  events.on(STATE_CHANNEL, (data) => {
-    assert.ok(isRecord(data) && data.version === 1, "payload must be a versioned record");
-    seen.push(data);
-  });
-  return seen;
-}
-
-function last(seen: Record<string, unknown>[]): Record<string, unknown> {
-  const value = seen.at(-1);
-  assert.ok(value, "expected a footer payload");
-  return value;
-}
-
-function share(value: unknown): number {
-  assert.equal(typeof value, "number");
-  return Number(value);
-}
 
 function compactEvent(compaction: CompactionResult): SessionCompactEvent {
   return {
@@ -50,33 +25,34 @@ function compactEvent(compaction: CompactionResult): SessionCompactEvent {
   };
 }
 
-test("footer data on pi.events follows the plugin and answers late subscribers", async (t) => {
-  const f = await fixture([backgroundCompaction], [], "tui");
-  t.after(() => f.close());
-  const seen = collect(f.events);
-  f.events.emit(REQUEST_CHANNEL, undefined);
-  const idle = last(seen);
+test("footer data has both marks while waiting and only Pi's threshold when off", async (t) => {
+  const f = await fixture([], [], "tui");
+  const controller = new BackgroundCompaction(f.pi, native);
+  t.after(async () => {
+    controller.reset(f.ctx);
+    await f.close();
+  });
+  controller.reset(f.ctx);
   // 100k window, 10k reserve: Pi compacts at 90%, the plugin starts at 85% of that.
-  assert.equal(idle.state, "idle");
-  assert.equal(idle.applied, false);
-  assert.equal(share(idle.threshold), 0.9);
-  assert.ok(Math.abs(share(idle.start) - 0.765) < 1e-9);
-  assert.equal(idle.after, undefined);
-  await f.session.prompt("/background-compaction off");
-  assert.equal(last(seen).state, "off");
-  assert.equal(last(seen).start, undefined, "a disabled plugin has no start mark");
-  assert.equal(share(last(seen).threshold), 0.9, "Pi still compacts");
-  await f.session.prompt("/background-compaction on");
-  assert.equal(last(seen).state, "idle");
-  await f.session.extensionRunner.emit({ type: "session_shutdown", reason: "reload" });
-  const count = seen.length;
-  f.events.emit(REQUEST_CHANNEL, undefined);
-  assert.equal(seen.length, count, "a shut-down runtime no longer answers");
+  const idle = controller.footerState();
+  assert.equal(idle?.state, "idle");
+  assert.equal(idle?.applied, false);
+  assert.equal(idle?.threshold, 0.9);
+  assert.ok(Math.abs((idle?.start ?? 0) - 0.765) < 1e-9);
+  assert.equal(idle?.after, undefined);
+  controller.setEnabled(false, f.ctx);
+  assert.equal(controller.footerState()?.state, "off");
+  assert.equal(controller.footerState()?.start, undefined, "a disabled plugin has no start mark");
+  assert.equal(controller.footerState()?.threshold, 0.9, "Pi still compacts");
+  controller.reset({ ...f.ctx, model: { ...f.model, api: "pi-virtual" } });
+  assert.equal(controller.footerState()?.state, "off");
+  controller.setEnabled(true, f.ctx);
+  controller.reset({ ...f.ctx, model: { ...f.model, api: "pi-virtual" } });
+  assert.deepEqual(controller.footerState(), { state: "unavailable", applied: false });
   assert.equal(f.provider.state.callCount, 0);
-  assert.deepEqual(f.errors, []);
 });
 
-test("ready publishes the expected context after adoption; adoption marks applied until the next change", async (t) => {
+test("ready carries the expected context after adoption; adoption marks applied until the next change", async (t) => {
   const f = await fixture([], [], "tui");
   const gate = deferred<CompactionResult>();
   const controller = new BackgroundCompaction(f.pi, { ...native, compact: async () => gate.promise });
@@ -84,17 +60,16 @@ test("ready publishes the expected context after adoption; adoption marks applie
     controller.reset(f.ctx);
     await f.close();
   });
-  const seen = collect(f.events);
   controller.consider(f.ctx);
-  assert.equal(last(seen).state, "running");
-  assert.equal(last(seen).after, undefined);
+  assert.equal(controller.footerState()?.state, "running");
+  assert.equal(controller.footerState()?.after, undefined);
   await flush();
   gate.resolve(result(beforeEvent(f.ctx).preparation));
   await flush();
-  const ready = last(seen);
-  assert.equal(ready.state, "ready");
-  const after = share(ready.after);
-  assert.ok(after > 0 && after < share(ready.threshold), `after ${after} must fit below Pi's threshold`);
+  const ready = controller.footerState();
+  assert.equal(ready?.state, "ready");
+  const after = ready?.after ?? 0;
+  assert.ok(after > 0 && after < (ready?.threshold ?? 0), `after ${after} must fit below Pi's threshold`);
   const details = controller.details(f.ctx);
   assert.equal(details.job?.phase, "ready");
   assert.equal(typeof details.job?.estimate, "number");
@@ -106,8 +81,8 @@ test("ready publishes the expected context after adoption; adoption marks applie
     notice ?? "",
     /^✓ Background summary applied · no wait · \S+ → ~\S+ tokens · prepared in \d+s$/,
   );
-  assert.equal(last(seen).state, "idle");
-  assert.equal(last(seen).applied, true);
+  assert.equal(controller.footerState()?.state, "idle");
+  assert.equal(controller.footerState()?.applied, true);
   assert.ok(controller.details(f.ctx).applied);
   assert.equal(
     f.statuses.get("background-compaction"),
@@ -116,7 +91,7 @@ test("ready publishes the expected context after adoption; adoption marks applie
   );
 
   controller.reset(f.ctx, "Model changed");
-  assert.equal(last(seen).applied, false);
+  assert.equal(controller.footerState()?.applied, false);
   assert.equal(controller.details(f.ctx).applied, undefined);
 });
 
@@ -127,7 +102,6 @@ test("native or foreign compactions do not claim a background adoption", async (
     controller.reset(f.ctx);
     await f.close();
   });
-  const seen = collect(f.events);
   const plain = result(beforeEvent(f.ctx).preparation);
   assert.equal(
     controller.compacted(compactEvent(plain), f.ctx),
@@ -142,7 +116,7 @@ test("native or foreign compactions do not claim a background adoption", async (
     undefined,
     "a marker alone does not prove this runtime supplied it",
   );
-  assert.equal(last(seen).applied, false);
+  assert.equal(controller.footerState()?.applied, false);
 });
 
 test("/background-compaction opens the status card only on an explicit status request", async (t) => {
@@ -164,9 +138,8 @@ for (const mode of ["json", "rpc"] as const)
   test(`/background-compaction status keeps the one-line answer in ${mode} mode`, async (t) => {
     const f = await fixture([backgroundCompaction], [], mode);
     t.after(() => f.close());
-    const seen = collect(f.events);
     await f.session.prompt("/background-compaction status");
     assert.equal(f.opened.cards, 0);
     assert.match(f.notices.at(-1) ?? "", /^idle: Waiting for enough context \(0\/2 failures\)$/);
-    assert.equal(seen.length, 0, "no footer data outside the TUI");
+    assert.deepEqual(f.widgetKeys, [], "no footer decoration outside the TUI");
   });

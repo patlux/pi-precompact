@@ -45,6 +45,7 @@ test("actual npm tarball has only runtime files and loads without packaged dev d
     "src/card.ts",
     "src/controller.ts",
     "src/files.ts",
+    "src/footer.ts",
     "src/format.ts",
     "src/index.ts",
     "src/native.ts",

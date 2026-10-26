@@ -10,18 +10,51 @@ import {
 import {
   type CompactionResult,
   createAgentSession,
-  createEventBus,
   DefaultResourceLoader,
   type ExtensionContext,
   type ExtensionFactory,
+  type ExtensionUIContext,
+  FooterComponent,
+  initTheme,
   ModelRuntime,
   type SessionBeforeCompactEvent,
   SessionManager,
   SettingsManager,
 } from "@earendil-works/pi-coding-agent";
+import { type Component, Container, type Terminal, TuiMainScreen } from "@earendil-works/pi-tui";
 import { loadNativeCompaction, type Preparation } from "../src/native.ts";
 
 export const native = await loadNativeCompaction();
+initTheme("dark", false);
+
+type Widget = Component & { dispose?(): void };
+type WidgetContent = Parameters<ExtensionUIContext["setWidget"]>[1] | string[];
+
+/** A terminal that is never started; the TUI only holds the component tree. */
+const silentTerminal: Terminal = {
+  start() {},
+  stop() {},
+  async drainInput() {},
+  write() {},
+  get columns() {
+    return 160;
+  },
+  get rows() {
+    return 40;
+  },
+  get kittyProtocolActive() {
+    return false;
+  },
+  moveBy() {},
+  hideCursor() {},
+  showCursor() {},
+  clearLine() {},
+  clearFromCursor() {},
+  clearScreen() {},
+  setTitle() {},
+  setProgress() {},
+  setProgramStatus() {},
+};
 
 export function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -78,12 +111,10 @@ export async function fixture(
   manager.appendMessage(assistant(`Old work ${"b".repeat(8_000)}`));
   manager.appendMessage({ role: "user", content: `Retain this request ${"c".repeat(4_000)}`, timestamp: 2 });
   manager.appendMessage(assistant("Recent answer"));
-  const events = createEventBus();
   const loader = new DefaultResourceLoader({
     cwd: dir,
     agentDir: join(dir, "agent"),
     settingsManager: settings,
-    eventBus: events,
     noExtensions: true,
     noSkills: true,
     noPromptTemplates: true,
@@ -108,6 +139,20 @@ export async function fixture(
   const statuses = new Map<string, string>();
   const notices: string[] = [];
   const opened = { cards: 0 };
+  // Pi's real footer on the real session, mounted like interactive mode mounts it.
+  const footer = new FooterComponent(session, {
+    getGitBranch: () => "main",
+    getExtensionStatuses: () => statuses,
+    getAvailableProviderCount: () => 1,
+    onBranchChange: () => () => {},
+  });
+  const tui = new TuiMainScreen(silentTerminal);
+  const footerContainer = new Container();
+  footerContainer.addChild(footer);
+  tui.addChild(new Container());
+  tui.addChild(footerContainer);
+  const widgets = new Map<string, Widget>();
+  const widgetKeys: string[] = [];
   const uiContext = session.extensionRunner.getUIContext();
   await session.bindExtensions({
     mode,
@@ -118,6 +163,12 @@ export async function fixture(
         else statuses.set(key, text);
       },
       notify: (message) => notices.push(message),
+      setWidget: (key: string, content: WidgetContent) => {
+        widgetKeys.push(key);
+        widgets.get(key)?.dispose?.();
+        widgets.delete(key);
+        if (typeof content === "function") widgets.set(key, content(tui, uiContext.theme));
+      },
       // Without a terminal Pi's context resolves `custom` immediately. Count the requests.
       custom: (factory, options) => {
         opened.cards++;
@@ -132,7 +183,6 @@ export async function fixture(
     appendEntry: <T>(type: string, data?: T) => {
       manager.appendCustomEntry(type, data);
     },
-    events,
   };
   return {
     dir,
@@ -146,8 +196,12 @@ export async function fixture(
     errors,
     statuses,
     notices,
-    events,
     opened,
+    footer,
+    footerContainer,
+    tui,
+    widgets,
+    widgetKeys,
     async close() {
       await session.extensionRunner.emit({ type: "session_shutdown", reason: "quit" });
       session.dispose();

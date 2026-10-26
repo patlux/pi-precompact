@@ -14,8 +14,8 @@ Der Code ist die Quelle. Ändert sich dort etwas, wird die Datei nachgezogen, ni
 
 ## Quelle und Darstellung
 
-- Seite 01 ist aus Pis echtem `FooterComponent` 1.4.0 gerendert, mit pi-session-id-footer `239aa7d`
-  und pi-background-compaction `de95728`: 120 Spalten, Theme dark, Truecolor.
+- Seite 01 ist aus Pis echtem `FooterComponent` 1.4.0 gerendert, mit pi-background-compaction `de95728`
+  und dem damaligen Status neben `(auto)`: 120 Spalten, Theme dark, Truecolor.
 - Seiten 02 und 03 sind Entwürfe nach denselben Ausrichtungs- und Farbregeln. Sie sind nicht gerendert.
 - Zahlen sind Beispielwerte. Die Schwellen folgen den Defaults: Start bei 85 % von Kontextfenster
   minus Reserve (82,4 % bei 272k und 8192 Reserve), Pis Schwelle bei 97,0 %.

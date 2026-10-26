@@ -51,33 +51,42 @@ When Pi adopts a background summary, the TUI and RPC clients receive one notice,
 `waited 12s` replaces `no wait` when Pi had to wait for a running request. The token value after `→` is Pi's estimate.
 Native fallback compactions produce no notice.
 
-The TUI footer keeps a separate background-compaction status visible from session start:
+The plugin sets one footer status from session start, `bg compact: <state>`:
 
-| Footer | Meaning |
+| State | Meaning |
 | --- | --- |
-| `bg compact: idle` | Enabled; no summary is in progress. |
-| `bg compact: running` | Preparing a summary while the agent continues. |
-| `bg compact: ready` | Holding a summary until Pi requests threshold compaction. |
-| `bg compact: paused` | Two background requests failed; native compaction remains available. |
-| `bg compact: off` | Disabled for this session, or native auto-compaction is disabled. |
-| `bg compact: unavailable` | Unsupported Pi installation, virtual model, or no model selected. |
+| `idle` | Enabled; no summary is in progress. |
+| `running` | Preparing a summary while the agent continues. |
+| `ready` | Holding a summary until Pi requests threshold compaction. |
+| `paused` | Two background requests failed; native compaction remains available. |
+| `off` | Disabled for this session, or native auto-compaction is disabled. |
+| `unavailable` | Unsupported Pi installation, virtual model, or no model selected. |
+
+In Pi's built-in TUI footer, the plugin moves this status from the status row into the statistics line.
+Pi's own context segment stays exactly as Pi renders it. From 100 columns, a context bar comes before it:
+
+```text
+━━━━━━━━━━━━━━━━━━━│━━━─│─ 91.6%/272k (auto) → ~14%
+```
+
+- The accent mark is where background preparation starts. The error mark is where Pi compacts.
+- The fill uses the state colour: `running` accent, `ready` success, `paused` warning, the others muted or dim.
+- `→ ~14%` follows while a summary is ready: the estimated context after Pi adopts it.
+- `✓ bg` follows directly after an adopted summary, until the next change.
+- `bg running`, `bg ready` (without an estimate), `bg paused`, `bg off`, and `bg unavailable` name the other states.
+
+Below 100 columns the line shows `91.6%/272k (auto) bg: ready` instead. When even that does not fit,
+or the footer has an unknown layout, Pi's status row keeps `bg compact: <state>`.
 
 Use `/background-compaction status` for the last event and failure count.
 Pi's `(auto)` context indicator refers to native automatic compaction, not this plugin.
-The plugin uses the shared footer status API; it does not replace the footer or add a widget.
 
-For richer footers, the plugin also publishes a versioned payload on `pi.events` before each status update:
-
-| Channel | Payload |
-| --- | --- |
-| `background-compaction:state` | `{ version: 1, state, applied, start?, threshold?, after? }` |
-| `background-compaction:request` | Emit anything; the plugin sends the last state again. |
-
-`state` is one of the six footer states. `applied` is true after Pi adopted a background summary, until the next change.
-`start`, `threshold`, and `after` are shares of the context window: where background work starts, where Pi compacts,
-and the estimated context after adoption (only while `ready`). The plain status text stays the fallback.
-[pi-session-id-footer](../pi-session-id-footer) renders this payload as a context bar beside Pi's `(auto)`.
-JSON, print, and RPC modes receive no terminal status. Shutdown and reload clear this plugin's status only.
+Pi has no public API to place text inside its footer. A zero-row widget below the editor finds the one mounted
+built-in `FooterComponent` and wraps the render method of that instance; the prototype stays untouched.
+The plugin reads the instance's status provider read-only and never modifies shared statuses.
+Other footer decorators can wrap the same instance before or after it; each keeps the other's lines.
+Custom footers are left alone. Shutdown and reload restore Pi's method and clear this plugin's status only.
+JSON, print, and RPC modes receive no terminal status or footer decoration.
 
 To stop use permanently, remove its package declaration, or omit the extension argument if you loaded it only for one invocation.
 
@@ -186,6 +195,7 @@ Source:
 - `/Users/patwoz/dev/Personal/pi/pi-background-compaction/src/validation.ts`: branch validation and context preview.
 - `/Users/patwoz/dev/Personal/pi/pi-background-compaction/src/files.ts`: file-metadata inheritance for Pi 1.4.0.
 - `/Users/patwoz/dev/Personal/pi/pi-background-compaction/src/card.ts`: the status card for `/background-compaction status`.
+- `/Users/patwoz/dev/Personal/pi/pi-background-compaction/src/footer.ts`: the context bar in Pi's built-in footer.
 - `/Users/patwoz/dev/Personal/pi/pi-background-compaction/src/format.ts`: token, duration, and share formatting.
 
 ## Apply / deploy

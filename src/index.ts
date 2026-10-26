@@ -1,20 +1,26 @@
 import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { statusCard } from "./card.ts";
-import { BackgroundCompaction, REQUEST_CHANNEL } from "./controller.ts";
+import { BackgroundCompaction } from "./controller.ts";
 import { inheritOwnFiles } from "./files.ts";
+import { attachFooter, STATUS_KEY } from "./footer.ts";
 import { loadNativeCompaction } from "./native.ts";
 
 export default function backgroundCompaction(pi: ExtensionAPI): void {
   let controller: BackgroundCompaction | undefined;
   let unavailable = "Not started";
-  const unsubscribe = pi.events.on(REQUEST_CHANNEL, () => controller?.republish());
+  let detachFooter: (() => void) | undefined;
   pi.on("session_start", async (_event, ctx) => {
+    detachFooter?.();
+    detachFooter = undefined;
     try {
-      controller = new BackgroundCompaction(pi, await loadNativeCompaction());
-      controller.reset(ctx, "Waiting for enough context");
+      const started = new BackgroundCompaction(pi, await loadNativeCompaction());
+      controller = started;
+      started.reset(ctx, "Waiting for enough context");
+      // Draw the status beside Pi's context usage. Pi's status row stays the fallback.
+      if (ctx.mode === "tui") detachFooter = attachFooter(ctx, () => started.footerState());
     } catch {
       controller = undefined;
-      if (ctx.mode === "tui") ctx.ui.setStatus("background-compaction", "bg compact: unavailable");
+      if (ctx.mode === "tui") ctx.ui.setStatus(STATUS_KEY, "bg compact: unavailable");
       unavailable =
         "Unsupported Pi installation. Native compaction remains active; Pi 1.4.0 with dist modules is required.";
       if (ctx.hasUI) ctx.ui.notify(unavailable, "warning");
@@ -52,8 +58,9 @@ export default function backgroundCompaction(pi: ExtensionAPI): void {
   pi.on("session_shutdown", (_event, ctx) => {
     controller?.reset(ctx, "Session shutdown");
     controller = undefined;
-    unsubscribe();
-    if (ctx.mode === "tui") ctx.ui.setStatus("background-compaction", undefined);
+    detachFooter?.();
+    detachFooter = undefined;
+    if (ctx.mode === "tui") ctx.ui.setStatus(STATUS_KEY, undefined);
   });
   pi.on("agent_settled", (event, ctx) => {
     if (event.aborted) controller?.reset(ctx, "Agent aborted");
