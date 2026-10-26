@@ -48,7 +48,16 @@ export default function precompact(pi: ExtensionAPI): void {
   });
   pi.on("session_compact", (event, ctx) => {
     const notice = controller?.compacted(event, ctx);
-    if (notice && ctx.hasUI) ctx.ui.notify(notice, "info");
+    if (!notice || !ctx.hasUI) return;
+    // Pi 1.4.0 emits compaction_end synchronously after this event, and its TUI then clears and
+    // rebuilds the chat. Show the notice after that rebuild, or it disappears at once.
+    setTimeout(() => {
+      try {
+        ctx.ui.notify(notice, "info");
+      } catch {
+        // The session ended in between; the notice no longer has a place to appear.
+      }
+    }, 0);
   });
   pi.on("session_compact_failed", (_event, ctx) =>
     controller?.reset(ctx, "Foreground compaction failed or cancelled"),

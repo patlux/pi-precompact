@@ -147,11 +147,20 @@ test("TUI: an adopted background summary is announced once; a native fallback is
     fauxAssistantMessage("Summary of the earlier work."),
     assistant("Second live answer", 92_000),
   ]);
+  // Pi's TUI clears and rebuilds the chat on compaction_end, which follows session_compact.
+  // A notice shown before that rebuild disappears, so it must arrive afterwards.
+  let noticesAtCompactionEnd: number | undefined;
+  const unsubscribe = adopted.session.subscribe((event) => {
+    if (event.type === "compaction_end") noticesAtCompactionEnd = adopted.notices.length;
+  });
+  t.after(unsubscribe);
   await adopted.session.prompt("First live instruction");
   await waitFor(() => adopted.provider.state.callCount === 2);
   await flush();
   await adopted.session.prompt("Keep this newer instruction");
   assert.ok(adopted.manager.getBranch().some((entry) => entry.type === "compaction" && entry.fromHook));
+  assert.equal(noticesAtCompactionEnd, 0, "no notice before Pi rebuilds the chat");
+  await new Promise((resolve) => setTimeout(resolve, 0));
   const notices = adopted.notices.filter((notice) => notice.startsWith("✓ Background summary applied"));
   assert.equal(notices.length, 1);
   assert.match(notices[0], /· (no wait|waited \S+) · \S+ → ~\S+ tokens · prepared in \S+$/);
