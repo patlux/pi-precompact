@@ -3,6 +3,12 @@
 Versions follow SemVer. Future entries come from Markdown changesets.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the release workflow.
 
+## 0.2.1 - 2026-10-27
+
+### Fixed
+
+- Remove an outdated sentence from the README.
+
 ## 0.2.0 - 2026-10-26
 
 ### Added
