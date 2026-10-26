@@ -3,6 +3,21 @@
 Versions follow SemVer. Future entries come from Markdown changesets.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the release workflow.
 
+## 0.2.0 - 2026-10-26
+
+### Added
+
+- Show the precompact state in the footer from session start, including idle, paused, off, and unavailable.
+- Open a status card for /precompact status and announce adopted background summaries.
+- Draw a context bar in Pi's built-in footer with the background start, Pi's threshold, the state, and the expected context after adoption; Pi's own context text stays unchanged.
+- Show nothing in the footer before the first measured response, like Pi, then fade the context bar in once. PI_PRECOMPACT_MOTION=off shows it without animation.
+- Publish the package on npm. Install it with `pi install npm:pi-precompact`.
+
+### Changed
+
+- Name the package pi-precompact, with the command /precompact and the motion variable PI_PRECOMPACT_MOTION.
+- Show the footer short form as pre and Pi's status text as precompact: <state>.
+
 ## 0.1.0 - 2026-10-25
 
 Local development baseline, not an npm publication.
