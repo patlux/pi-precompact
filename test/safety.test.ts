@@ -76,11 +76,8 @@ test("records known discarded usage outside model context", async (t) => {
   await flush();
   controller.reset(f.ctx);
   const entry = f.manager.getBranch().at(-1);
-  assert.ok(entry?.type === "custom" && entry.customType === "background-compaction.discarded");
-  assert.doesNotMatch(
-    JSON.stringify(f.manager.buildSessionContext().messages),
-    /background-compaction\.discarded/,
-  );
+  assert.ok(entry?.type === "custom" && entry.customType === "precompact.discarded");
+  assert.doesNotMatch(JSON.stringify(f.manager.buildSessionContext().messages), /precompact\.discarded/);
 });
 
 test("a changed snapshot prefix is rejected even when its entry IDs remain unchanged", async (t) => {

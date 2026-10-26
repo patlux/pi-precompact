@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { CompactionResult, SessionCompactEvent } from "@earendil-works/pi-coding-agent";
 import { BackgroundCompaction } from "../src/controller.ts";
-import backgroundCompaction from "../src/index.ts";
+import precompact from "../src/index.ts";
 import { beforeEvent, deferred, fixture, flush, native, result } from "./helpers.ts";
 
 function compactEvent(compaction: CompactionResult): SessionCompactEvent {
@@ -84,7 +84,7 @@ test("ready carries the expected context after adoption; adoption marks applied 
   assert.equal(controller.footerState()?.state, "idle");
   assert.equal(controller.footerState()?.applied, true);
   assert.ok(controller.details(f.ctx).applied);
-  assert.equal(f.statuses.get("precompact"), "bg compact: idle", "status text keeps the six states");
+  assert.equal(f.statuses.get("precompact"), "precompact: idle", "status text keeps the six states");
 
   controller.reset(f.ctx, "Model changed");
   assert.equal(controller.footerState()?.applied, false);
@@ -106,7 +106,7 @@ test("native or foreign compactions do not claim a background adoption", async (
   );
   assert.equal(
     controller.compacted(
-      compactEvent({ ...plain, details: { readFiles: [], modifiedFiles: [], backgroundCompaction: 1 } }),
+      compactEvent({ ...plain, details: { readFiles: [], modifiedFiles: [], precompact: 1 } }),
       f.ctx,
     ),
     undefined,
@@ -116,7 +116,7 @@ test("native or foreign compactions do not claim a background adoption", async (
 });
 
 test("/precompact opens the status card only on an explicit status request", async (t) => {
-  const f = await fixture([backgroundCompaction], [], "tui");
+  const f = await fixture([precompact], [], "tui");
   t.after(() => f.close());
   await f.session.prompt("/precompact off");
   await f.session.prompt("/precompact on");
@@ -132,7 +132,7 @@ test("/precompact opens the status card only on an explicit status request", asy
 
 for (const mode of ["json", "rpc"] as const)
   test(`/precompact status keeps the one-line answer in ${mode} mode`, async (t) => {
-    const f = await fixture([backgroundCompaction], [], mode);
+    const f = await fixture([precompact], [], mode);
     t.after(() => f.close());
     await f.session.prompt("/precompact status");
     assert.equal(f.opened.cards, 0);

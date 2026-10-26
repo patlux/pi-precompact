@@ -5,7 +5,7 @@ import { type ExtensionFactory, FooterComponent } from "@earendil-works/pi-codin
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import type { FooterState } from "../src/controller.ts";
 import { findBuiltInFooter, inlineStatus, STATUS_KEY } from "../src/footer.ts";
-import backgroundCompaction from "../src/index.ts";
+import precompact from "../src/index.ts";
 import { fixture } from "./helpers.ts";
 
 const native = FooterComponent.prototype.render;
@@ -53,13 +53,13 @@ const firstLineDecorator: ExtensionFactory = (pi) => {
 };
 
 test("TUI: the bar appears beside Pi's unchanged context segment without a status row", async (t) => {
-  const f = await fixture([backgroundCompaction], [], "tui");
+  const f = await fixture([precompact], [], "tui");
   t.after(() => f.close());
   assert.deepEqual(f.widgetKeys, ["precompact-footer"]);
   assert.deepEqual(f.widgets.get("precompact-footer")?.render(160), [], "zero-row widget");
   const before = native.call(f.footer, 160);
   assert.equal(before.length, 3);
-  assert.equal(plain(before[2] ?? ""), "bg compact: idle");
+  assert.equal(plain(before[2] ?? ""), "precompact: idle");
   const lines = f.footer.render(160);
   assert.equal(lines.length, 2, "Pi's status row disappears when it only held this plugin");
   assert.equal(lines[0], before[0]);
@@ -77,17 +77,17 @@ test("TUI: the bar appears beside Pi's unchanged context segment without a statu
   }
   assert.match(
     plain(f.footer.render(99)[1] ?? ""),
-    /79\.0%\/100k \(auto\) bg: idle {2,}/,
+    /79\.0%\/100k \(auto\) pre: idle {2,}/,
     "compact form below 100",
   );
   assert.doesNotMatch(plain(f.footer.render(99)[1] ?? ""), /━/);
   const narrow = f.footer.render(30);
-  assert.equal(plain(narrow.at(-1) ?? ""), "bg compact: idle", "Pi's status row is the fallback");
+  assert.equal(plain(narrow.at(-1) ?? ""), "precompact: idle", "Pi's status row is the fallback");
   assert.deepEqual(f.errors, []);
 });
 
 test("other statuses keep Pi's status row; only this plugin's entry moves", async (t) => {
-  const f = await fixture([backgroundCompaction], [], "tui");
+  const f = await fixture([precompact], [], "tui");
   t.after(() => f.close());
   f.statuses.set("goal", "working\n now");
   const lines = f.footer.render(160);
@@ -108,7 +108,7 @@ test("each state adds its own suffix and colour; Pi's text stays in place", asyn
   const cases: [FooterState, RegExp, string | undefined][] = [
     [
       { state: "running", applied: false, ...marks },
-      / 79\.0%\/100k \(auto\) bg running {2,}/,
+      / 79\.0%\/100k \(auto\) pre running {2,}/,
       theme.fg("accent", "━"),
     ],
     [
@@ -118,35 +118,35 @@ test("each state adds its own suffix and colour; Pi's text stays in place", asyn
     ],
     [
       { state: "ready", applied: false, ...marks },
-      / 79\.0%\/100k \(auto\) bg ready {2,}/,
+      / 79\.0%\/100k \(auto\) pre ready {2,}/,
       theme.fg("success", "━"),
     ],
     [
       { state: "paused", applied: false, ...marks },
-      / 79\.0%\/100k \(auto\) bg paused {2,}/,
+      / 79\.0%\/100k \(auto\) pre paused {2,}/,
       theme.fg("warning", "━"),
     ],
-    [{ state: "idle", applied: true, ...marks }, / 79\.0%\/100k \(auto\) ✓ bg {2,}/, theme.fg("muted", "━")],
+    [{ state: "idle", applied: true, ...marks }, / 79\.0%\/100k \(auto\) ✓ pre {2,}/, theme.fg("muted", "━")],
     [
       { state: "off", applied: false, threshold: 0.9 },
-      /━{19}─{2}│─{3} 79\.0%\/100k \(auto\) bg off {2,}/,
+      /━{19}─{2}│─{3} 79\.0%\/100k \(auto\) pre off {2,}/,
       undefined,
     ],
     [
       { state: "unavailable", applied: false },
-      /━{19}─{5} 79\.0%\/100k \(auto\) bg unavailable {2,}/,
+      /━{19}─{5} 79\.0%\/100k \(auto\) pre unavailable {2,}/,
       undefined,
     ],
   ];
   for (const [state, expected, fill] of cases) {
-    f.statuses.set(STATUS_KEY, `bg compact: ${state.state}`);
+    f.statuses.set(STATUS_KEY, `precompact: ${state.state}`);
     const lines = inlineStatus(native.call(f.footer, 160), f.statuses, state, theme, 160);
     assert.equal(lines.length, 2, state.state);
     assert.match(plain(lines[1] ?? ""), expected, JSON.stringify(state));
     if (fill) assert.ok(lines[1]?.includes(fill), `${state.state} fill colour`);
     if (state.after !== undefined) assert.ok(lines[1]?.includes(theme.fg("success", "~14%")));
   }
-  f.statuses.set(STATUS_KEY, "bg compact: idle");
+  f.statuses.set(STATUS_KEY, "precompact: idle");
   const lines = native.call(f.footer, 160);
   const ready: FooterState = { state: "ready", applied: false, ...marks, after: 0.14 };
   assert.deepEqual(
@@ -171,9 +171,7 @@ test("each state adds its own suffix and colour; Pi's text stays in place", asyn
 for (const order of ["plugin first", "other decorator first"] as const)
   test(`composes with another footer decorator (${order}) and survives reloads`, async (t) => {
     const extensions =
-      order === "plugin first"
-        ? [backgroundCompaction, firstLineDecorator]
-        : [firstLineDecorator, backgroundCompaction];
+      order === "plugin first" ? [precompact, firstLineDecorator] : [firstLineDecorator, precompact];
     const f = await fixture(extensions, [], "tui");
     t.after(() => f.close());
     for (let round = 0; round < 3; round++) {
@@ -220,7 +218,7 @@ test("reloads below another decorator never stack inactive wrappers", async (t) 
     });
     pi.on("session_shutdown", (_event, ctx) => ctx.ui.setWidget("recorder", undefined));
   };
-  const f = await fixture([backgroundCompaction, recorder], [], "tui");
+  const f = await fixture([precompact, recorder], [], "tui");
   t.after(() => f.close());
   for (let round = 0; round < 3; round++) {
     if (round > 0) {
@@ -233,7 +231,7 @@ test("reloads below another decorator never stack inactive wrappers", async (t) 
 });
 
 test("shutdown restores Pi's render method and removes the widget", async (t) => {
-  const f = await fixture([backgroundCompaction], [], "tui");
+  const f = await fixture([precompact], [], "tui");
   t.after(() => f.close());
   assert.notEqual(f.footer.render, native);
   await f.session.extensionRunner.emit({ type: "session_shutdown", reason: "quit" });
@@ -244,7 +242,7 @@ test("shutdown restores Pi's render method and removes the widget", async (t) =>
 });
 
 test("a custom footer is left alone; Pi's status row stays the fallback", async (t) => {
-  const f = await fixture([backgroundCompaction], [], "tui");
+  const f = await fixture([precompact], [], "tui");
   t.after(() => f.close());
   await f.session.extensionRunner.emit({ type: "session_shutdown", reason: "reload" });
   f.footerContainer.clear();
@@ -252,6 +250,6 @@ test("a custom footer is left alone; Pi's status row stays the fallback", async 
   f.footerContainer.addChild(custom);
   await f.session.extensionRunner.emit({ type: "session_start", reason: "reload" });
   assert.deepEqual(f.tui.render(80), ["custom footer"]);
-  assert.equal(f.statuses.get(STATUS_KEY), "bg compact: idle");
+  assert.equal(f.statuses.get(STATUS_KEY), "precompact: idle");
   assert.deepEqual(f.errors, []);
 });

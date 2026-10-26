@@ -31,7 +31,7 @@ type Usage = NonNullable<CompactionResult["usage"]>;
 
 /**
  * What the footer draws. Shares are fractions of the model's context window.
- * The plain `bg compact: <state>` status text stays the fallback for other footers.
+ * The plain `precompact: <state>` status text stays the fallback for other footers.
  */
 export interface FooterState {
   state: Label;
@@ -153,7 +153,7 @@ export class BackgroundCompaction {
     const applied = this.pendingApplied;
     this.reset(ctx, "Compaction completed");
     const details = event.compactionEntry.details;
-    if (!applied || !isRecord(details) || details.backgroundCompaction !== 1) return undefined;
+    if (!applied || !isRecord(details) || details.precompact !== 1) return undefined;
     this.applied = applied;
     this.showApplied = true;
     this.last = "Prepared summary applied";
@@ -199,7 +199,7 @@ export class BackgroundCompaction {
       footer.after = this.job.estimate / window;
     // Store the footer data first: setStatus triggers the render that reads it.
     this.footer = footer;
-    ctx.ui.setStatus(STATUS_KEY, `bg compact: ${label}`);
+    ctx.ui.setStatus(STATUS_KEY, `precompact: ${label}`);
   }
 
   /** The last footer data; undefined outside the TUI. */
@@ -268,8 +268,7 @@ export class BackgroundCompaction {
     // Pi's public extension API has no usage-entry writer. Keep known discarded
     // usage auditable without putting it into the conversation or double counting.
     if (job?.result?.usage && job.snapshot.sessionId === ctx.sessionManager.getSessionId()) {
-      // The entry type and the backgroundCompaction marker predate the rename; existing sessions use them.
-      this.pi.appendEntry("background-compaction.discarded", { reason, usage: job.result.usage });
+      this.pi.appendEntry("precompact.discarded", { reason, usage: job.result.usage });
     }
     this.show(ctx, this.failures >= 2 ? "paused" : "idle", reason);
   }
@@ -436,7 +435,7 @@ export class BackgroundCompaction {
         compaction: {
           ...accepted,
           details: isFileDetails(accepted.details)
-            ? { ...accepted.details, backgroundCompaction: 1 }
+            ? { ...accepted.details, precompact: 1 }
             : accepted.details,
         },
       };

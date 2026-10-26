@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { fauxAssistantMessage, Type } from "@earendil-works/pi-ai";
 import type { ExtensionContext, ExtensionFactory } from "@earendil-works/pi-coding-agent";
-import backgroundCompaction from "../src/index.ts";
+import precompact from "../src/index.ts";
 import { assistant, beforeEvent, deferred, fixture, flush } from "./helpers.ts";
 
 // Faux computes its own usage from text length. Inject deterministic measured
@@ -30,7 +30,7 @@ async function waitFor(predicate: () => boolean) {
 
 test("real Pi runtime: background summary does not block a prompt and is committed only by native threshold", async (t) => {
   const summaryGate = deferred<ReturnType<typeof fauxAssistantMessage>>();
-  const f = await fixture([measuredUsage, backgroundCompaction]);
+  const f = await fixture([measuredUsage, precompact]);
   t.after(() => f.close());
   const requests: string[] = [];
   f.provider.setResponses([
@@ -93,7 +93,7 @@ test("tool-driven turns continue while the summary is pending without abort or s
       },
     });
   };
-  const f = await fixture([tool, measuredUsage, backgroundCompaction]);
+  const f = await fixture([tool, measuredUsage, precompact]);
   t.after(() => f.close());
   f.session.setActiveToolsByName(["fixture"]);
   f.provider.setResponses([
@@ -120,7 +120,7 @@ test("tool-driven turns continue while the summary is pending without abort or s
 });
 
 test("real provider failure falls through to Pi's foreground summary", async (t) => {
-  const f = await fixture([measuredUsage, backgroundCompaction]);
+  const f = await fixture([measuredUsage, precompact]);
   t.after(() => f.close());
   f.provider.setResponses([
     assistant("First live answer", 79_000),
@@ -140,7 +140,7 @@ test("real provider failure falls through to Pi's foreground summary", async (t)
 });
 
 test("TUI: an adopted background summary is announced once; a native fallback is not", async (t) => {
-  const adopted = await fixture([measuredUsage, backgroundCompaction], [], "tui");
+  const adopted = await fixture([measuredUsage, precompact], [], "tui");
   t.after(() => adopted.close());
   adopted.provider.setResponses([
     assistant("First live answer", 79_000),
@@ -157,7 +157,7 @@ test("TUI: an adopted background summary is announced once; a native fallback is
   assert.match(notices[0], /· (no wait|waited \S+) · \S+ → ~\S+ tokens · prepared in \S+$/);
   assert.deepEqual(adopted.errors, []);
 
-  const fallback = await fixture([measuredUsage, backgroundCompaction], [], "tui");
+  const fallback = await fixture([measuredUsage, precompact], [], "tui");
   t.after(() => fallback.close());
   fallback.provider.setResponses([
     assistant("First live answer", 79_000),
@@ -198,7 +198,7 @@ test("shutdown cancels an active native summary request", async (t) => {
       context = ctx;
     });
   };
-  const f = await fixture([measuredUsage, backgroundCompaction, capture]);
+  const f = await fixture([measuredUsage, precompact, capture]);
   t.after(() => f.close());
   f.provider.setResponses([
     assistant("First answer", 79_000),

@@ -47,7 +47,7 @@ test("card shows state, both marks, the expected result, request usage and keys"
   const f = await fixture();
   t.after(() => f.close());
   const lines = renderCard(ready, f.ctx.ui.theme, 120, now).map(plain);
-  assert.match(lines[0], /^╭─ Background compaction ─+╮$/);
+  assert.match(lines[0], /^╭─ Precompact ─+╮$/);
   assert.match(lines.at(-1) ?? "", /^╰─+╯$/);
   for (const line of lines.slice(1, -1)) assert.match(line, /^│ .* │$/);
   const body = lines.join("\n");

@@ -18,8 +18,7 @@ export function isFileDetails(value: unknown): value is { readFiles: string[]; m
 export function inheritOwnFiles(preparation: Preparation, branch: SessionEntry[]): void {
   const previous = getLatestCompactionEntry(branch);
   const details: unknown = previous?.details;
-  if (!isFileDetails(details) || !("backgroundCompaction" in details) || details.backgroundCompaction !== 1)
-    return;
+  if (!isFileDetails(details) || !("precompact" in details) || details.precompact !== 1) return;
   for (const file of details.readFiles) preparation.fileOps.read.add(file);
   for (const file of details.modifiedFiles) preparation.fileOps.edited.add(file);
 }

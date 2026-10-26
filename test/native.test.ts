@@ -77,7 +77,7 @@ test("own fromHook file lists survive subsequent native preparation", () => {
     "old summary",
     kept,
     1000,
-    { readFiles: ["/fixture/read.ts"], modifiedFiles: ["/fixture/write.ts"], backgroundCompaction: 1 },
+    { readFiles: ["/fixture/read.ts"], modifiedFiles: ["/fixture/write.ts"], precompact: 1 },
     true,
   );
   manager.appendMessage(assistant("work"));

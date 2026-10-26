@@ -2,22 +2,22 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { CompactionResult } from "@earendil-works/pi-coding-agent";
 import { BackgroundCompaction } from "../src/controller.ts";
-import backgroundCompaction from "../src/index.ts";
+import precompact from "../src/index.ts";
 import { beforeEvent, deferred, fixture, flush, native, result } from "./helpers.ts";
 
 const key = "precompact";
 
 test("footer is visible from session start, follows commands, and clears on shutdown", async (t) => {
-  const f = await fixture([backgroundCompaction], [], "tui");
+  const f = await fixture([precompact], [], "tui");
   t.after(() => f.close());
   f.statuses.set("other-plugin", "keep me");
-  assert.equal(f.statuses.get(key), "bg compact: idle");
+  assert.equal(f.statuses.get(key), "precompact: idle");
   await f.session.prompt("/precompact off");
-  assert.equal(f.statuses.get(key), "bg compact: off");
+  assert.equal(f.statuses.get(key), "precompact: off");
   await f.session.prompt("/precompact reset");
-  assert.equal(f.statuses.get(key), "bg compact: off");
+  assert.equal(f.statuses.get(key), "precompact: off");
   await f.session.prompt("/precompact on");
-  assert.equal(f.statuses.get(key), "bg compact: idle");
+  assert.equal(f.statuses.get(key), "precompact: idle");
   await f.session.extensionRunner.emit({ type: "session_shutdown", reason: "reload" });
   assert.equal(f.statuses.has(key), false);
   assert.equal(f.statuses.get("other-plugin"), "keep me");
@@ -34,17 +34,17 @@ test("footer tracks running, ready, accepted and cancelled work without disappea
     await f.close();
   });
   controller.consider(f.ctx);
-  assert.equal(f.statuses.get(key), "bg compact: running");
+  assert.equal(f.statuses.get(key), "precompact: running");
   await flush();
   gate.resolve(result(beforeEvent(f.ctx).preparation));
   await flush();
-  assert.equal(f.statuses.get(key), "bg compact: ready");
+  assert.equal(f.statuses.get(key), "precompact: ready");
   assert.ok((await controller.beforeCompact(beforeEvent(f.ctx), f.ctx))?.compaction);
-  assert.equal(f.statuses.get(key), "bg compact: idle");
+  assert.equal(f.statuses.get(key), "precompact: idle");
   controller.consider(f.ctx);
   controller.reset(f.ctx, "Agent aborted");
   await flush();
-  assert.equal(f.statuses.get(key), "bg compact: idle");
+  assert.equal(f.statuses.get(key), "precompact: idle");
 });
 
 test("footer shows suspension after two failures and recovers on reset", async (t) => {
@@ -60,9 +60,9 @@ test("footer shows suspension after two failures and recovers on reset", async (
     controller.consider(f.ctx);
     await flush();
   }
-  assert.equal(f.statuses.get(key), "bg compact: paused");
+  assert.equal(f.statuses.get(key), "precompact: paused");
   controller.reset(f.ctx);
-  assert.equal(f.statuses.get(key), "bg compact: idle");
+  assert.equal(f.statuses.get(key), "precompact: idle");
 });
 
 test("footer distinguishes native-disabled and unsupported models from waiting", async (t) => {
@@ -71,18 +71,18 @@ test("footer distinguishes native-disabled and unsupported models from waiting",
   const controller = new BackgroundCompaction(f.pi, native);
   f.settings.setCompactionEnabled(false);
   controller.reset(f.ctx);
-  assert.equal(f.statuses.get(key), "bg compact: off");
+  assert.equal(f.statuses.get(key), "precompact: off");
   f.settings.setCompactionEnabled(true);
   controller.reset({ ...f.ctx, model: { ...f.model, api: "pi-virtual" } });
-  assert.equal(f.statuses.get(key), "bg compact: unavailable");
+  assert.equal(f.statuses.get(key), "precompact: unavailable");
   controller.reset(f.ctx);
-  assert.equal(f.statuses.get(key), "bg compact: idle");
+  assert.equal(f.statuses.get(key), "precompact: idle");
   assert.equal(f.provider.state.callCount, 0);
 });
 
 for (const mode of ["json", "print", "rpc"] as const)
   test(`footer does not write terminal status in ${mode} mode`, async (t) => {
-    const f = await fixture([backgroundCompaction], [], mode);
+    const f = await fixture([precompact], [], mode);
     t.after(() => f.close());
     await f.session.prompt("/precompact off");
     assert.equal(f.statuses.size, 0);

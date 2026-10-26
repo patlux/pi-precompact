@@ -7,7 +7,7 @@ Inspired by [OpenCode background compaction](https://github.com/anomalyco/openco
 This is an independent implementation, not an OpenCode port.
 
 The project was developed locally as `pi-background-compaction`. That npm name belongs to an unrelated package.
-The entry type `background-compaction.discarded` and the `backgroundCompaction` marker keep their names, so existing sessions stay readable.
+Compactions written by `pi-background-compaction` carried a different marker; this version does not recognise them.
 
 ## Status
 
@@ -54,7 +54,7 @@ When Pi adopts a background summary, the TUI and RPC clients receive one notice,
 `waited 12s` replaces `no wait` when Pi had to wait for a running request. The token value after `→` is Pi's estimate.
 Native fallback compactions produce no notice.
 
-The plugin sets one footer status from session start, `bg compact: <state>`:
+The plugin sets one footer status from session start, `precompact: <state>`:
 
 | State | Meaning |
 | --- | --- |
@@ -75,14 +75,14 @@ Pi's own context segment stays exactly as Pi renders it. From 100 columns, a con
 - The accent mark is where background preparation starts. The error mark is where Pi compacts.
 - The fill uses the state colour: `running` accent, `ready` success, `paused` warning, the others muted or dim.
 - `→ ~14%` follows while a summary is ready: the estimated context after Pi adopts it.
-- `✓ bg` follows directly after an adopted summary, until the next change.
-- `bg running`, `bg ready` (without an estimate), `bg paused`, `bg off`, and `bg unavailable` name the other states.
+- `✓ pre` follows directly after an adopted summary, until the next change.
+- `pre running`, `pre ready` (without an estimate), `pre paused`, `pre off`, and `pre unavailable` name the other states.
 
-Below 100 columns the line shows `91.6%/272k (auto) bg: ready` instead. When even that does not fit,
-or the footer has an unknown layout, Pi's status row keeps `bg compact: <state>`.
+Below 100 columns the line shows `91.6%/272k (auto) pre: ready` instead. When even that does not fit,
+or the footer has an unknown layout, Pi's status row keeps `precompact: <state>`.
 
 Before the first response with token usage, Pi shows only its context value and no usage numbers.
-The plugin then shows nothing either: no bar, no `bg` text, and no status row entry.
+The plugin then shows nothing either: no bar, no `pre` text, and no status row entry.
 With the first measured response, the bar fades in once:
 
 - Pi's numbers appear at once; the bar reserves its columns in the same frame.
@@ -162,7 +162,7 @@ Background requests do not use custom SDK `agent.streamFunction` overrides or re
 
 Background summaries consume provider quota, even when discarded. Requests can overlap with ordinary agent requests.
 Accepted summaries carry their native usage into the compaction entry.
-The extension records known discarded-result usage as a non-context `background-compaction.discarded` custom entry.
+The extension records known discarded-result usage as a non-context `precompact.discarded` custom entry.
 Pi does not include those custom entries in its built-in cost totals.
 
 Partial failures and cancelled or late requests can incur costs without returning usage.

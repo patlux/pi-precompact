@@ -12,7 +12,7 @@ import {
   type RevealView,
   STATUS_KEY,
 } from "../src/footer.ts";
-import backgroundCompaction from "../src/index.ts";
+import precompact from "../src/index.ts";
 import { assistant, fixture } from "./helpers.ts";
 
 const native = FooterComponent.prototype.render;
@@ -115,7 +115,7 @@ test("frames: the wave runs left to right, the fill grows, Pi's text stays put",
   const f = await fixture([], [], "tui");
   t.after(() => f.close());
   const theme = f.ctx.ui.theme;
-  f.statuses.set(STATUS_KEY, "bg compact: idle");
+  f.statuses.set(STATUS_KEY, "precompact: idle");
   const lines = native.call(f.footer, 160);
   const frame = (elapsed: number, background?: ReturnType<typeof rgbColor>) =>
     inlineStatus(lines, f.statuses, idle, theme, 160, at(elapsed, background))[1] ?? "";
@@ -144,19 +144,19 @@ test("frames: the state suffix fades in after the bar; hidden shows Pi's line un
   t.after(() => f.close());
   const theme = f.ctx.ui.theme;
   const running: FooterState = { ...idle, state: "running" };
-  f.statuses.set(STATUS_KEY, "bg compact: running");
+  f.statuses.set(STATUS_KEY, "precompact: running");
   const lines = native.call(f.footer, 160);
   const frame = (elapsed: number) =>
     plain(inlineStatus(lines, f.statuses, running, theme, 160, at(elapsed))[1] ?? "");
-  assert.match(frame(Infinity), /\(auto\) bg running {2,}/);
+  assert.match(frame(Infinity), /\(auto\) pre running {2,}/);
   assert.match(frame(100), /\(auto\) {12,}/, "the suffix is not there yet");
-  assert.match(frame(260), /\(auto\) bg running {2,}/);
+  assert.match(frame(260), /\(auto\) pre running {2,}/);
   const hidden = inlineStatus(lines, f.statuses, running, theme, 160, { phase: () => undefined });
   assert.deepEqual(hidden, [lines[0], lines[1]], "nothing from the plugin, not even the status row");
 });
 
 test("TUI: a fresh session shows nothing until the first response, then fades in once", async (t) => {
-  const f = await fixture([backgroundCompaction], [], "tui", { fresh: true });
+  const f = await fixture([precompact], [], "tui", { fresh: true });
   t.after(() => f.close());
   let renders = 0;
   f.tui.requestRender = () => {
@@ -195,7 +195,7 @@ test("TUI: PI_PRECOMPACT_MOTION=off shows the final bar with the first response"
     if (previous === undefined) delete process.env.PI_PRECOMPACT_MOTION;
     else process.env.PI_PRECOMPACT_MOTION = previous;
   });
-  const f = await fixture([backgroundCompaction], [], "tui", { fresh: true });
+  const f = await fixture([precompact], [], "tui", { fresh: true });
   t.after(() => f.close());
   f.tui.requestRender = () => assert.fail("no animation frames");
   assert.equal(f.footer.render(160).length, 2);

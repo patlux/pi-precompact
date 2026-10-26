@@ -32,7 +32,7 @@ export async function loadNativeCompaction(
   root = getPackageDir(),
   version = VERSION,
 ): Promise<NativeCompaction> {
-  if (version !== "1.4.0") throw new Error("Background compaction requires Pi 1.4.0");
+  if (version !== "1.4.0") throw new Error("Precompact requires Pi 1.4.0");
   const metadata: unknown = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
   if (
     !isRecord(metadata) ||

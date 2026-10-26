@@ -19,6 +19,8 @@ Der Code ist die Quelle. Ändert sich dort etwas, wird die Datei nachgezogen, ni
 - Seite 01 ist aus Pis echtem `FooterComponent` 1.4.0 gerendert, mit pi-precompact `de95728`
   und dem damaligen Status neben `(auto)`: 120 Spalten, Theme dark, Truecolor.
 - Seiten 02 bis 05 sind Entwürfe nach denselben Ausrichtungs- und Farbregeln. Sie sind nicht gerendert.
+- Die Entwürfe zeigen noch die frühere Kurzform `bg` (`bg: idle`, `bg compact: idle`). Das Plugin zeigt heute
+  `pre` im Footer und `precompact: <state>` in Pis Statuszeile.
 - Die Zwischenbilder auf 04 und 05 sind in OKLab berechnet, vom Terminal-Hintergrund #2C2E33 zur Zielfarbe.
   Kurve `cubic-bezier(0.23, 1, 0.32, 1)`, Welle 5 ms je Spalte und 120 ms je Zeichen, Füllung 80–240 ms.
   Das Plugin mischt in sRGB, weil `mixColors` in OKLCH Rot über Violett führt; der Unterschied ist kaum sichtbar.

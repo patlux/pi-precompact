@@ -5,7 +5,7 @@ import { inheritOwnFiles } from "./files.ts";
 import { attachFooter, STATUS_KEY } from "./footer.ts";
 import { loadNativeCompaction } from "./native.ts";
 
-export default function backgroundCompaction(pi: ExtensionAPI): void {
+export default function precompact(pi: ExtensionAPI): void {
   let controller: BackgroundCompaction | undefined;
   let unavailable = "Not started";
   let detachFooter: (() => void) | undefined;
@@ -23,7 +23,7 @@ export default function backgroundCompaction(pi: ExtensionAPI): void {
       }
     } catch {
       controller = undefined;
-      if (ctx.mode === "tui") ctx.ui.setStatus(STATUS_KEY, "bg compact: unavailable");
+      if (ctx.mode === "tui") ctx.ui.setStatus(STATUS_KEY, "precompact: unavailable");
       unavailable =
         "Unsupported Pi installation. Native compaction remains active; Pi 1.4.0 with dist modules is required.";
       if (ctx.hasUI) ctx.ui.notify(unavailable, "warning");
@@ -69,7 +69,7 @@ export default function backgroundCompaction(pi: ExtensionAPI): void {
     if (event.aborted) controller?.reset(ctx, "Agent aborted");
   });
   pi.registerCommand("precompact", {
-    description: "Background compaction: status, on, off, or reset (session only)",
+    description: "Precompact: status, on, off, or reset (session only)",
     handler: async (args, ctx) => {
       const action = args.trim() || "status";
       if (!controller) {

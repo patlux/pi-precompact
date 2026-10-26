@@ -295,10 +295,10 @@ function suffixOf(state: FooterState, percent: number | null): Segment[] {
       [" → ", "dim"],
       [`~${Math.round(state.after * 100)}%`, "success"],
     ];
-  if (state.applied && state.state === "idle") return [[" ✓ bg", "success"]];
+  if (state.applied && state.state === "idle") return [[" ✓ pre", "success"]];
   if (state.state === "idle") return [];
   return [
-    [" bg ", "dim"],
+    [" pre ", "dim"],
     [state.state, STATE_COLOR[state.state]],
   ];
 }
@@ -342,8 +342,8 @@ function textStats(
   const column = visibleWidth(plain.slice(0, end));
   const label =
     state.applied && state.state === "idle"
-      ? theme.fg("success", " ✓ bg")
-      : theme.fg("dim", " bg: ") + theme.fg(STATE_COLOR[state.state], state.state);
+      ? theme.fg("success", " ✓ pre")
+      : theme.fg("dim", " pre: ") + theme.fg(STATE_COLOR[state.state], state.state);
   const labelWidth = visibleWidth(label);
   if (column + labelWidth > width) return undefined;
   const padding = /^ */.exec(plain.slice(end))?.[0].length ?? 0;
@@ -369,7 +369,7 @@ export function inlineStatus(
   width: number,
   reveal: RevealView = SETTLED,
 ): string[] {
-  if (!state || !statuses || statuses.get(STATUS_KEY) !== `bg compact: ${state.state}`) return lines;
+  if (!state || !statuses || statuses.get(STATUS_KEY) !== `precompact: ${state.state}`) return lines;
   if (lines.length !== 3 || lines[2] !== statusRow(statuses, theme, width)) return lines;
   const stats = lines[1];
   const plain = stripVTControlCharacters(stats);

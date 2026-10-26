@@ -153,7 +153,7 @@ export function renderCard(details: StatusDetails, theme: Theme, width: number, 
   const outer = Math.min(MAX_WIDTH, width);
   const inner = outer - 4;
   if (inner < 8) return rows(details, now).map((row) => truncateToWidth(paint(theme, row), width, ""));
-  const title = "─ Background compaction ";
+  const title = "─ Precompact ";
   const border = (text: string) => theme.fg("border", text);
   const top = border(
     `╭${truncateToWidth(title, outer - 2, "")}${"─".repeat(Math.max(0, outer - 2 - title.length))}╮`,
