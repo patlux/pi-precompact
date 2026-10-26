@@ -1,6 +1,6 @@
 # Footer-Status in FigCraft
 
-`footer-status.figcraft` zeigt, wie pi-background-compaction seinen Zustand im Pi-Footer meldet.
+`footer-status.figcraft` zeigt, wie pi-precompact seinen Zustand im Pi-Footer meldet.
 Die Datei enthält außerdem Vorschläge für die nächste Fassung.
 Der Code ist die Quelle. Ändert sich dort etwas, wird die Datei nachgezogen, nicht umgekehrt.
 
@@ -16,7 +16,7 @@ Der Code ist die Quelle. Ändert sich dort etwas, wird die Datei nachgezogen, ni
 
 ## Quelle und Darstellung
 
-- Seite 01 ist aus Pis echtem `FooterComponent` 1.4.0 gerendert, mit pi-background-compaction `de95728`
+- Seite 01 ist aus Pis echtem `FooterComponent` 1.4.0 gerendert, mit pi-precompact `de95728`
   und dem damaligen Status neben `(auto)`: 120 Spalten, Theme dark, Truecolor.
 - Seiten 02 bis 05 sind Entwürfe nach denselben Ausrichtungs- und Farbregeln. Sie sind nicht gerendert.
 - Die Zwischenbilder auf 04 und 05 sind in OKLab berechnet, vom Terminal-Hintergrund #2C2E33 zur Zielfarbe.
@@ -36,7 +36,7 @@ Der Code ist die Quelle. Ändert sich dort etwas, wird die Datei nachgezogen, ni
 Vorher `/Users/patwoz/dev/agents/skills/figcraft/SKILL.md` lesen und den MCP-Server `figcraft` benutzen.
 
 1. `list_windows`. Kein Fenster nehmen, das eine andere Session benutzt.
-2. `open_window {path: "/Users/patwoz/dev/Personal/pi/pi-background-compaction/design/figcraft/footer-status.figcraft"}`.
+2. `open_window {path: "/Users/patwoz/dev/Personal/pi/pi-precompact/design/figcraft/footer-status.figcraft"}`.
    Das fokussierte FigCraft-Fenster muss dafür sichtbar sein.
 3. Neue Terminalzeilen spaltengenau bauen: ein Textlayer pro Zeile, Farben per `selection.setPaint` mit `range`.
 4. Prüfen mit `outline`, `lint_layout` und `screenshot`. Speichern mit `save_file` und danach `file_status`

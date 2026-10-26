@@ -5,18 +5,18 @@ import { BackgroundCompaction } from "../src/controller.ts";
 import backgroundCompaction from "../src/index.ts";
 import { beforeEvent, deferred, fixture, flush, native, result } from "./helpers.ts";
 
-const key = "background-compaction";
+const key = "precompact";
 
 test("footer is visible from session start, follows commands, and clears on shutdown", async (t) => {
   const f = await fixture([backgroundCompaction], [], "tui");
   t.after(() => f.close());
   f.statuses.set("other-plugin", "keep me");
   assert.equal(f.statuses.get(key), "bg compact: idle");
-  await f.session.prompt("/background-compaction off");
+  await f.session.prompt("/precompact off");
   assert.equal(f.statuses.get(key), "bg compact: off");
-  await f.session.prompt("/background-compaction reset");
+  await f.session.prompt("/precompact reset");
   assert.equal(f.statuses.get(key), "bg compact: off");
-  await f.session.prompt("/background-compaction on");
+  await f.session.prompt("/precompact on");
   assert.equal(f.statuses.get(key), "bg compact: idle");
   await f.session.extensionRunner.emit({ type: "session_shutdown", reason: "reload" });
   assert.equal(f.statuses.has(key), false);
@@ -84,7 +84,7 @@ for (const mode of ["json", "print", "rpc"] as const)
   test(`footer does not write terminal status in ${mode} mode`, async (t) => {
     const f = await fixture([backgroundCompaction], [], mode);
     t.after(() => f.close());
-    await f.session.prompt("/background-compaction off");
+    await f.session.prompt("/precompact off");
     assert.equal(f.statuses.size, 0);
     assert.equal(f.provider.state.callCount, 0);
   });

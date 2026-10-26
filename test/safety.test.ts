@@ -79,7 +79,7 @@ test("records known discarded usage outside model context", async (t) => {
   assert.ok(entry?.type === "custom" && entry.customType === "background-compaction.discarded");
   assert.doesNotMatch(
     JSON.stringify(f.manager.buildSessionContext().messages),
-    /background-compaction.discarded/,
+    /background-compaction\.discarded/,
   );
 });
 

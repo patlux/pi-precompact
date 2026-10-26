@@ -1,10 +1,13 @@
-# pi-background-compaction
+# pi-precompact
 
 An experimental Pi extension that prepares compaction summaries while the agent continues its work.
 Pi still decides when to compact. The extension supplies a valid prepared summary at that boundary, or leaves the request to Pi.
 
 Inspired by [OpenCode background compaction](https://github.com/anomalyco/opencode/pull/57444).
 This is an independent implementation, not an OpenCode port.
+
+The project was developed locally as `pi-background-compaction`. That npm name belongs to an unrelated package.
+The entry type `background-compaction.discarded` and the `backgroundCompaction` marker keep their names, so existing sessions stay readable.
 
 ## Status
 
@@ -20,7 +23,7 @@ This is an independent implementation, not an OpenCode port.
 Start a separate Pi session with the explicit extension path:
 
 ```sh
-pi --extension /Users/patwoz/dev/Personal/pi/pi-background-compaction/src/index.ts
+pi --extension /Users/patwoz/dev/Personal/pi/pi-precompact/src/index.ts
 ```
 
 The extension becomes active when that session starts. It does not change existing sessions.
@@ -29,15 +32,15 @@ Do not combine it with another extension that replaces compaction.
 Commands:
 
 ```text
-/background-compaction status
-/background-compaction off
-/background-compaction on
-/background-compaction reset
+/precompact status
+/precompact off
+/precompact on
+/precompact reset
 ```
 
 These commands affect only the current session. `reset` cancels the prepared job and clears the failure counter.
 
-`/background-compaction` and `/background-compaction status` open a status card in the TUI, in place of the editor.
+`/precompact` and `/precompact status` open a status card in the TUI, in place of the editor.
 The card appears only on this explicit request. It shows the state and last event, a context bar with the plugin's start and Pi's threshold,
 the expected result of a held summary, the request usage, and the failure count. It updates every second.
 Press `r` to reset, `o` to switch off or on, and Escape or Enter to close. RPC, JSON, and print modes keep the one-line answer.
@@ -90,10 +93,10 @@ With the first measured response, the bar fades in once:
 
 The plugin asks the terminal for its background colour once, as Pi's theme does.
 Without an answer or without truecolor, each glyph appears directly in its colour as the wave reaches it.
-Set `PI_BACKGROUND_COMPACTION_MOTION=off` before starting Pi to show the bar without animation.
+Set `PI_PRECOMPACT_MOTION=off` before starting Pi to show the bar without animation.
 The design is on pages 04 and 05 of `design/figcraft/footer-status.figcraft`.
 
-Use `/background-compaction status` for the last event and failure count.
+Use `/precompact status` for the last event and failure count.
 Pi's `(auto)` context indicator refers to native automatic compaction, not this plugin.
 
 Pi has no public API to place text inside its footer. A zero-row widget below the editor finds the one mounted
@@ -179,19 +182,19 @@ Prerequisites: Node.js 22.19+, Python 3.11+, Git, npm, Make, and tar.
 Install the locked development dependencies:
 
 ```sh
-npm --prefix /Users/patwoz/dev/Personal/pi/pi-background-compaction ci --ignore-scripts
+npm --prefix /Users/patwoz/dev/Personal/pi/pi-precompact ci --ignore-scripts
 ```
 
 Install the changeset hook once per clone:
 
 ```sh
-make -C /Users/patwoz/dev/Personal/pi/pi-background-compaction hooks-install
+make -C /Users/patwoz/dev/Personal/pi/pi-precompact hooks-install
 ```
 
 Run the same checks as CI:
 
 ```sh
-npm --prefix /Users/patwoz/dev/Personal/pi/pi-background-compaction run check
+npm --prefix /Users/patwoz/dev/Personal/pi/pi-precompact run check
 ```
 
 This checks formatting, lint, types, runtime tests, the actual npm tarball, and the Changesets flow.
@@ -204,14 +207,14 @@ They exercise real extension loading, provider streaming, tool-driven turns, thr
 
 Source:
 
-- `/Users/patwoz/dev/Personal/pi/pi-background-compaction/src/index.ts`: lifecycle hooks and commands.
-- `/Users/patwoz/dev/Personal/pi/pi-background-compaction/src/controller.ts`: job scheduling and cancellation.
-- `/Users/patwoz/dev/Personal/pi/pi-background-compaction/src/native.ts`: version-guarded native adapter.
-- `/Users/patwoz/dev/Personal/pi/pi-background-compaction/src/validation.ts`: branch validation and context preview.
-- `/Users/patwoz/dev/Personal/pi/pi-background-compaction/src/files.ts`: file-metadata inheritance for Pi 1.4.0.
-- `/Users/patwoz/dev/Personal/pi/pi-background-compaction/src/card.ts`: the status card for `/background-compaction status`.
-- `/Users/patwoz/dev/Personal/pi/pi-background-compaction/src/footer.ts`: the context bar in Pi's built-in footer.
-- `/Users/patwoz/dev/Personal/pi/pi-background-compaction/src/format.ts`: token, duration, and share formatting.
+- `/Users/patwoz/dev/Personal/pi/pi-precompact/src/index.ts`: lifecycle hooks and commands.
+- `/Users/patwoz/dev/Personal/pi/pi-precompact/src/controller.ts`: job scheduling and cancellation.
+- `/Users/patwoz/dev/Personal/pi/pi-precompact/src/native.ts`: version-guarded native adapter.
+- `/Users/patwoz/dev/Personal/pi/pi-precompact/src/validation.ts`: branch validation and context preview.
+- `/Users/patwoz/dev/Personal/pi/pi-precompact/src/files.ts`: file-metadata inheritance for Pi 1.4.0.
+- `/Users/patwoz/dev/Personal/pi/pi-precompact/src/card.ts`: the status card for `/precompact status`.
+- `/Users/patwoz/dev/Personal/pi/pi-precompact/src/footer.ts`: the context bar in Pi's built-in footer.
+- `/Users/patwoz/dev/Personal/pi/pi-precompact/src/format.ts`: token, duration, and share formatting.
 
 ## Apply / deploy
 

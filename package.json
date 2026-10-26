@@ -1,5 +1,5 @@
 {
-  "name": "pi-background-compaction",
+  "name": "pi-precompact",
   "version": "0.1.0",
   "description": "Precompute Pi compaction summaries without interrupting the agent.",
   "type": "module",

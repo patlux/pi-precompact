@@ -6,9 +6,9 @@ Use Node.js 22.19+ and Python 3.11+. Git, npm, Make, and tar must be on `PATH`.
 The lockfile pins development dependencies. Pi supplies the runtime SDK.
 
 ```sh
-npm --prefix /Users/patwoz/dev/Personal/pi/pi-background-compaction ci --ignore-scripts
-make -C /Users/patwoz/dev/Personal/pi/pi-background-compaction hooks-install
-make -C /Users/patwoz/dev/Personal/pi/pi-background-compaction verify
+npm --prefix /Users/patwoz/dev/Personal/pi/pi-precompact ci --ignore-scripts
+make -C /Users/patwoz/dev/Personal/pi/pi-precompact hooks-install
+make -C /Users/patwoz/dev/Personal/pi/pi-precompact verify
 ```
 
 `make verify` and CI run the same checks:
@@ -28,7 +28,7 @@ There is no automatic npm publication, OIDC, or release-token workflow.
 To apply formatting:
 
 ```sh
-npm --prefix /Users/patwoz/dev/Personal/pi/pi-background-compaction run format
+npm --prefix /Users/patwoz/dev/Personal/pi/pi-precompact run format
 ```
 
 Do not relax tests to accept an unsupported Pi version. Review the private native adapter before changing the exact SDK pin.
@@ -47,14 +47,14 @@ Do not bypass the hook.
 Interactive entry:
 
 ```sh
-make -C /Users/patwoz/dev/Personal/pi/pi-background-compaction changeset
+make -C /Users/patwoz/dev/Personal/pi/pi-precompact changeset
 ```
 
 Non-interactive entry:
 
 ```sh
-python3 /Users/patwoz/dev/Personal/pi/pi-background-compaction/scripts/changeset.py add --type fixed --bump patch "Preserve newer messages after compaction."
-python3 /Users/patwoz/dev/Personal/pi/pi-background-compaction/scripts/changeset.py add --empty
+python3 /Users/patwoz/dev/Personal/pi/pi-precompact/scripts/changeset.py add --type fixed --bump patch "Preserve newer messages after compaction."
+python3 /Users/patwoz/dev/Personal/pi/pi-precompact/scripts/changeset.py add --empty
 ```
 
 Stage the generated file with the change it describes. Example note:
@@ -104,9 +104,9 @@ Prepare a version only after an explicit release request, from clean `main` with
 Use the changeset tool, not `npm version` or a manual version edit.
 
 ```sh
-make -C /Users/patwoz/dev/Personal/pi/pi-background-compaction changeset-status
-make -C /Users/patwoz/dev/Personal/pi/pi-background-compaction version
-make -C /Users/patwoz/dev/Personal/pi/pi-background-compaction verify
+make -C /Users/patwoz/dev/Personal/pi/pi-precompact changeset-status
+make -C /Users/patwoz/dev/Personal/pi/pi-precompact version
+make -C /Users/patwoz/dev/Personal/pi/pi-precompact verify
 ```
 
 `make version` plans all outputs before writing. It:
@@ -136,7 +136,7 @@ Before the first requested publication, review these fields in a normal changese
 Then prepare and commit the version. Run the read-only publication gate:
 
 ```sh
-npm --prefix /Users/patwoz/dev/Personal/pi/pi-background-compaction run release:check
+npm --prefix /Users/patwoz/dev/Personal/pi/pi-precompact run release:check
 ```
 
 It requires clean `main`, synchronized versions, no pending notes, and an exact changeset-generated release at `HEAD`.
@@ -160,6 +160,6 @@ The changeset implementation derives from these reviewed local sources:
 - `/Users/patwoz/dev/Personal/thirdparty/teams-gpui/CONTRIBUTING.md` and its Python-aware hook at `d5055564033c1b3872c1537a0e6113b8e626ef11`.
 
 The TWS and Zugriff scripts differ only in their introductory description at those revisions.
-The source checkout retains the TWS MIT notice in `/Users/patwoz/dev/Personal/pi/pi-background-compaction/scripts/LICENSE.tws`.
+The source checkout retains the TWS MIT notice in `/Users/patwoz/dev/Personal/pi/pi-precompact/scripts/LICENSE.tws`.
 This adaptation replaces Cargo version handling with single-package npm version handling.
 It does not copy Teams-GPUI's backlog exemption, Nix fallback, or application installation steps.

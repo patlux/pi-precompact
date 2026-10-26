@@ -188,12 +188,12 @@ test("TUI: a fresh session shows nothing until the first response, then fades in
   assert.deepEqual(f.errors, []);
 });
 
-test("TUI: PI_BACKGROUND_COMPACTION_MOTION=off shows the final bar with the first response", async (t) => {
-  const previous = process.env.PI_BACKGROUND_COMPACTION_MOTION;
-  process.env.PI_BACKGROUND_COMPACTION_MOTION = "off";
+test("TUI: PI_PRECOMPACT_MOTION=off shows the final bar with the first response", async (t) => {
+  const previous = process.env.PI_PRECOMPACT_MOTION;
+  process.env.PI_PRECOMPACT_MOTION = "off";
   t.after(() => {
-    if (previous === undefined) delete process.env.PI_BACKGROUND_COMPACTION_MOTION;
-    else process.env.PI_BACKGROUND_COMPACTION_MOTION = previous;
+    if (previous === undefined) delete process.env.PI_PRECOMPACT_MOTION;
+    else process.env.PI_PRECOMPACT_MOTION = previous;
   });
   const f = await fixture([backgroundCompaction], [], "tui", { fresh: true });
   t.after(() => f.close());

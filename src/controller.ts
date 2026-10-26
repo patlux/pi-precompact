@@ -9,6 +9,7 @@ import {
   SettingsManager,
 } from "@earendil-works/pi-coding-agent";
 import { inheritOwnFiles, isFileDetails } from "./files.ts";
+import { STATUS_KEY } from "./footer.ts";
 import { formatDuration, formatTokens } from "./format.ts";
 import type { NativeCompaction } from "./native.ts";
 import { fingerprint, type Snapshot, snapshotValid, validateResult } from "./validation.ts";
@@ -198,7 +199,7 @@ export class BackgroundCompaction {
       footer.after = this.job.estimate / window;
     // Store the footer data first: setStatus triggers the render that reads it.
     this.footer = footer;
-    ctx.ui.setStatus("background-compaction", `bg compact: ${label}`);
+    ctx.ui.setStatus(STATUS_KEY, `bg compact: ${label}`);
   }
 
   /** The last footer data; undefined outside the TUI. */
@@ -267,6 +268,7 @@ export class BackgroundCompaction {
     // Pi's public extension API has no usage-entry writer. Keep known discarded
     // usage auditable without putting it into the conversation or double counting.
     if (job?.result?.usage && job.snapshot.sessionId === ctx.sessionManager.getSessionId()) {
+      // The entry type and the backgroundCompaction marker predate the rename; existing sessions use them.
       this.pi.appendEntry("background-compaction.discarded", { reason, usage: job.result.usage });
     }
     this.show(ctx, this.failures >= 2 ? "paused" : "idle", reason);

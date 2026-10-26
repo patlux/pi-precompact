@@ -84,11 +84,7 @@ test("ready carries the expected context after adoption; adoption marks applied 
   assert.equal(controller.footerState()?.state, "idle");
   assert.equal(controller.footerState()?.applied, true);
   assert.ok(controller.details(f.ctx).applied);
-  assert.equal(
-    f.statuses.get("background-compaction"),
-    "bg compact: idle",
-    "status text keeps the six states",
-  );
+  assert.equal(f.statuses.get("precompact"), "bg compact: idle", "status text keeps the six states");
 
   controller.reset(f.ctx, "Model changed");
   assert.equal(controller.footerState()?.applied, false);
@@ -119,26 +115,26 @@ test("native or foreign compactions do not claim a background adoption", async (
   assert.equal(controller.footerState()?.applied, false);
 });
 
-test("/background-compaction opens the status card only on an explicit status request", async (t) => {
+test("/precompact opens the status card only on an explicit status request", async (t) => {
   const f = await fixture([backgroundCompaction], [], "tui");
   t.after(() => f.close());
-  await f.session.prompt("/background-compaction off");
-  await f.session.prompt("/background-compaction on");
-  await f.session.prompt("/background-compaction reset");
+  await f.session.prompt("/precompact off");
+  await f.session.prompt("/precompact on");
+  await f.session.prompt("/precompact reset");
   assert.equal(f.opened.cards, 0, "state changes never open the card");
   assert.equal(f.notices.length, 3);
-  await f.session.prompt("/background-compaction");
-  await f.session.prompt("/background-compaction status");
+  await f.session.prompt("/precompact");
+  await f.session.prompt("/precompact status");
   assert.equal(f.opened.cards, 2);
   assert.equal(f.notices.length, 3, "the card replaces the one-line status in the TUI");
   assert.deepEqual(f.errors, []);
 });
 
 for (const mode of ["json", "rpc"] as const)
-  test(`/background-compaction status keeps the one-line answer in ${mode} mode`, async (t) => {
+  test(`/precompact status keeps the one-line answer in ${mode} mode`, async (t) => {
     const f = await fixture([backgroundCompaction], [], mode);
     t.after(() => f.close());
-    await f.session.prompt("/background-compaction status");
+    await f.session.prompt("/precompact status");
     assert.equal(f.opened.cards, 0);
     assert.match(f.notices.at(-1) ?? "", /^idle: Waiting for enough context \(0\/2 failures\)$/);
     assert.deepEqual(f.widgetKeys, [], "no footer decoration outside the TUI");

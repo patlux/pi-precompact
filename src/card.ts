@@ -165,7 +165,7 @@ export function renderCard(details: StatusDetails, theme: Theme, width: number, 
   return [top, ...body, border(`╰${"─".repeat(outer - 2)}╯`)];
 }
 
-/** The status card for an explicit `/background-compaction status`. Resolves when closed. */
+/** The status card for an explicit `/precompact status`. Resolves when closed. */
 export function statusCard(
   actions: CardActions,
   tui: Pick<TUI, "requestRender">,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Dependency-free changesets for pi-background-compaction (Python 3.11+).
+"""Dependency-free changesets for pi-precompact (Python 3.11+).
 
 Adapted from the tws/Zugriff changeset tool. Keep its Markdown, hook and SemVer
 contract; update one npm manifest and lockfile instead of a Cargo workspace.

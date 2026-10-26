@@ -9,7 +9,7 @@ import backgroundCompaction from "../src/index.ts";
 import { fixture } from "./helpers.ts";
 
 const native = FooterComponent.prototype.render;
-const MARK = Symbol.for("pi-background-compaction.footer-render");
+const MARK = Symbol.for("pi-precompact.footer-render");
 const marks = { start: 0.765, threshold: 0.9 };
 
 function markedOriginal(render: unknown): unknown {
@@ -55,8 +55,8 @@ const firstLineDecorator: ExtensionFactory = (pi) => {
 test("TUI: the bar appears beside Pi's unchanged context segment without a status row", async (t) => {
   const f = await fixture([backgroundCompaction], [], "tui");
   t.after(() => f.close());
-  assert.deepEqual(f.widgetKeys, ["background-compaction-footer"]);
-  assert.deepEqual(f.widgets.get("background-compaction-footer")?.render(160), [], "zero-row widget");
+  assert.deepEqual(f.widgetKeys, ["precompact-footer"]);
+  assert.deepEqual(f.widgets.get("precompact-footer")?.render(160), [], "zero-row widget");
   const before = native.call(f.footer, 160);
   assert.equal(before.length, 3);
   assert.equal(plain(before[2] ?? ""), "bg compact: idle");
@@ -94,7 +94,11 @@ test("other statuses keep Pi's status row; only this plugin's entry moves", asyn
   assert.equal(lines.length, 3);
   assert.equal(plain(lines[2] ?? ""), "working now");
   assert.match(plain(lines[1] ?? ""), /│─{3} 79\.0%\/100k \(auto\)/);
-  assert.deepEqual([...f.statuses.keys()].sort(), [STATUS_KEY, "goal"], "shared statuses are never modified");
+  assert.deepEqual(
+    [...f.statuses.keys()].sort(),
+    [STATUS_KEY, "goal"].sort(),
+    "shared statuses are never modified",
+  );
 });
 
 test("each state adds its own suffix and colour; Pi's text stays in place", async (t) => {
@@ -234,7 +238,7 @@ test("shutdown restores Pi's render method and removes the widget", async (t) =>
   assert.notEqual(f.footer.render, native);
   await f.session.extensionRunner.emit({ type: "session_shutdown", reason: "quit" });
   assert.equal(f.footer.render, native);
-  assert.equal(f.widgets.has("background-compaction-footer"), false);
+  assert.equal(f.widgets.has("precompact-footer"), false);
   assert.deepEqual(f.footer.render(160), native.call(f.footer, 160));
   assert.equal(f.statuses.has(STATUS_KEY), false);
 });

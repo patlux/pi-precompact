@@ -178,7 +178,7 @@ test("Pi's actual file extension loader resolves the plugin and private native a
   const path = fileURLToPath(new URL("../src/index.ts", import.meta.url));
   const f = await fixture([measuredUsage], [path]);
   t.after(() => f.close());
-  assert.ok(f.session.extensionRunner.getCommand("background-compaction"));
+  assert.ok(f.session.extensionRunner.getCommand("precompact"));
   assert.ok(f.session.extensionRunner.getExtensionPaths().includes(path));
   f.provider.setResponses([assistant("first", 79_000), fauxAssistantMessage("File-loaded summary")]);
   await f.session.prompt("Start");

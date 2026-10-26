@@ -18,10 +18,10 @@ type Token = Parameters<Theme["fg"]>[0];
 type Render = FooterComponent["render"];
 type Segment = readonly [text: string, token: Token];
 
-export const STATUS_KEY = "background-compaction";
-const WIDGET_KEY = "background-compaction-footer";
+export const STATUS_KEY = "precompact";
+const WIDGET_KEY = "precompact-footer";
 /** Marks our render wrapper. `Symbol.for` keeps the key stable across extension reloads. */
-const MARK = Symbol.for("pi-background-compaction.footer-render");
+const MARK = Symbol.for("pi-precompact.footer-render");
 const MIN_PADDING = 2;
 const BAR_MIN_WIDTH = 100;
 const CELLS = 24;

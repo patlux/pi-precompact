@@ -18,7 +18,7 @@ export default function backgroundCompaction(pi: ExtensionAPI): void {
       started.reset(ctx, "Waiting for enough context");
       // Draw the status beside Pi's context usage. Pi's status row stays the fallback.
       if (ctx.mode === "tui") {
-        const motion = process.env.PI_BACKGROUND_COMPACTION_MOTION !== "off";
+        const motion = process.env.PI_PRECOMPACT_MOTION !== "off";
         detachFooter = attachFooter(ctx, () => started.footerState(), { motion });
       }
     } catch {
@@ -68,7 +68,7 @@ export default function backgroundCompaction(pi: ExtensionAPI): void {
   pi.on("agent_settled", (event, ctx) => {
     if (event.aborted) controller?.reset(ctx, "Agent aborted");
   });
-  pi.registerCommand("background-compaction", {
+  pi.registerCommand("precompact", {
     description: "Background compaction: status, on, off, or reset (session only)",
     handler: async (args, ctx) => {
       const action = args.trim() || "status";
@@ -79,7 +79,7 @@ export default function backgroundCompaction(pi: ExtensionAPI): void {
       if (action === "on" || action === "off") controller.setEnabled(action === "on", ctx);
       else if (action === "reset") controller.reset(ctx, "Manually reset");
       else if (action !== "status") {
-        ctx.ui.notify("Usage: /background-compaction [status|on|off|reset]", "warning");
+        ctx.ui.notify("Usage: /precompact [status|on|off|reset]", "warning");
         return;
       }
       controller.refreshStatus(ctx);

@@ -22,7 +22,7 @@ function packedFiles(value: unknown): { filename: string; paths: string[] } {
     assert.ok(isRecord(file) && typeof file.path === "string");
     return file.path;
   });
-  assert.match(pack.filename, /^pi-background-compaction-\d+\.\d+\.\d+\.tgz$/);
+  assert.match(pack.filename, /^pi-precompact-\d+\.\d+\.\d+\.tgz$/);
   return { filename: pack.filename, paths };
 }
 
@@ -54,7 +54,7 @@ test("actual npm tarball has only runtime files and loads without packaged dev d
   execFileSync("tar", ["-xzf", join(temp, packed.filename), "-C", temp], { timeout: 10_000 });
   const manifest: unknown = JSON.parse(await readFile(join(temp, "package/package.json"), "utf8"));
   assert.ok(isRecord(manifest));
-  assert.equal(manifest.name, "pi-background-compaction");
+  assert.equal(manifest.name, "pi-precompact");
   assert.deepEqual(manifest.pi, { extensions: ["./src/index.ts"] });
   assert.deepEqual(manifest.exports, { ".": "./src/index.ts" });
   assert.deepEqual(manifest.peerDependencies, {
