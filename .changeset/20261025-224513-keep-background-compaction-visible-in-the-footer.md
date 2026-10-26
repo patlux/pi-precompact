@@ -3,4 +3,4 @@ type: added
 bump: patch
 ---
 
-Keep background compaction visible in the footer, including idle, paused, off, and unavailable states.
+Show the precompact state in the footer from session start, including idle, paused, off, and unavailable.
