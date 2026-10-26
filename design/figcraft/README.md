@@ -11,12 +11,16 @@ Der Code ist die Quelle. Ändert sich dort etwas, wird die Datei nachgezogen, ni
 | 01 Stand heute | Sechs Zustände, Sonderfälle (ohne `(auto)`, 48 Spalten), Übergänge, Beobachtungen, Farben |
 | 02 Verbesserungen | V1–V6, Empfehlung V1 + V4 + V5, Bewertung |
 | 03 Kreative Ideen | K1–K7, Favorit K4 + K2 (später K1), Bewertung |
+| 04 Einblenden | Leiste erst ab der ersten Antwort, Ablauf in 7 Bildern (240 ms), Zeitachse, Regeln, verworfene Varianten |
+| 05 Prototyp Einblenden | Abspielbarer Flow „Einblenden“: acht Terminal-Bilder, zeitgesteuert verkettet |
 
 ## Quelle und Darstellung
 
 - Seite 01 ist aus Pis echtem `FooterComponent` 1.4.0 gerendert, mit pi-background-compaction `de95728`
   und dem damaligen Status neben `(auto)`: 120 Spalten, Theme dark, Truecolor.
-- Seiten 02 und 03 sind Entwürfe nach denselben Ausrichtungs- und Farbregeln. Sie sind nicht gerendert.
+- Seiten 02 bis 05 sind Entwürfe nach denselben Ausrichtungs- und Farbregeln. Sie sind nicht gerendert.
+- Die Zwischenbilder auf 04 und 05 sind berechnet: OKLab-Mischung vom Terminal-Hintergrund #2C2E33 zur Zielfarbe,
+  `cubic-bezier(0.23, 1, 0.32, 1)`, Welle 5 ms je Spalte und 120 ms je Zeichen, Füllung 80–240 ms.
 - Zahlen sind Beispielwerte. Die Schwellen folgen den Defaults: Start bei 85 % von Kontextfenster
   minus Reserve (82,4 % bei 272k und 8192 Reserve), Pis Schwelle bei 97,0 %.
 - Schrift: MesloLGS Nerd Font 14 px wie in der Ghostty-Konfiguration, 8,44 px pro Spalte, 18 px pro Zeile.
