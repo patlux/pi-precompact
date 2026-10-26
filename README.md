@@ -6,8 +6,6 @@ Pi still decides when to compact. The extension supplies a valid prepared summar
 Inspired by [OpenCode background compaction](https://github.com/anomalyco/opencode/pull/57444).
 This is an independent implementation, not an OpenCode port.
 
-Not related to the npm package `pi-background-compaction`.
-
 ## Status
 
 - Targets `@earendil-works/pi-coding-agent` **1.4.0** only.
