@@ -10,7 +10,7 @@ This is an independent implementation, not an OpenCode port.
 
 ## Status
 
-- Targets `@earendil-works/pi-coding-agent` **1.4.0** only.
+- Supports Pi **1.2.0 up to 1.4.x**. CI tests every release in that range, and the newest Pi every day.
 - Uses Pi's native context projection, preparation, and summary generator.
 - Does not abort the agent or inject a `continue` message.
 - Does not install itself, change settings, or run a background process.
@@ -161,16 +161,17 @@ The estimated result must reduce context and fit below the native ceiling with a
 New history after the snapshot must also fit within `min(max(2 × keepRecentTokens, 30,000), ceiling / 4)`.
 These checks use Pi's token estimates, not an exact provider tokenizer. Native overflow recovery remains the final safeguard.
 
-Pi 1.4.0 skips inherited file metadata from all extension-generated compactions.
+Pi 1.2 to 1.4 skip inherited file metadata from all extension-generated compactions.
 A narrow adapter preserves this extension's marked file lists in both background preparation and foreground fallback.
 It leaves other extensions' details alone.
 
 ## Compatibility and limits
 
-`prepareCompaction()` is not a public root export in Pi 1.4.0.
-The adapter loads the installed distribution module after checking the runtime and package versions.
-Unknown versions, mismatched installations, and binary installations without distribution modules leave the extension inactive.
+`prepareCompaction()` is not a public root export in Pi.
+The adapter loads the installed distribution module after it checks that the runtime is Pi 1.2.0 up to 1.4.x and matches its package.
+Other versions, mismatched installations, and binary installations without distribution modules leave the extension inactive.
 Pi's normal compaction remains available.
+To try an untested Pi release at your own risk, start Pi with `PI_PRECOMPACT_ALLOW_UNTESTED_PI=1`. The extension then shows a warning.
 
 Virtual routing models use native compaction only. This avoids speculative work against unresolved model limits.
 Physical models use `ctx.modelRegistry.streamSimple()`, with the configured provider and request-time authentication.
@@ -215,7 +216,8 @@ npm run check
 ```
 
 This checks formatting, lint, types, runtime tests, the actual npm tarball, and the Changesets flow.
-CI runs these checks on Linux and macOS with Node.js 22 and 24.
+CI runs these checks on Linux and macOS with Node.js 22 and 24, and the tests against every supported Pi release.
+A daily workflow runs the tests against the newest Pi.
 
 Tests use temporary directories, in-memory credentials, in-memory sessions, and a local scripted provider.
 They do not load personal extensions, read real credential files, or call a remote model.
@@ -228,7 +230,7 @@ Source:
 - `src/controller.ts`: job scheduling and cancellation.
 - `src/native.ts`: version-guarded native adapter.
 - `src/validation.ts`: branch validation and context preview.
-- `src/files.ts`: file-metadata inheritance for Pi 1.4.0.
+- `src/files.ts`: file-metadata inheritance for Pi 1.2 to 1.4.
 - `src/card.ts`: the status card for `/precompact status`.
 - `src/footer.ts`: the context bar in Pi's built-in footer.
 - `src/format.ts`: token, duration, and share formatting.

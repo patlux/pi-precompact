@@ -62,8 +62,8 @@ test("actual npm tarball has only runtime files and loads without packaged dev d
   });
   assert.deepEqual(manifest.exports, { ".": "./src/index.ts" });
   assert.deepEqual(manifest.peerDependencies, {
-    "@earendil-works/pi-coding-agent": "1.4.0",
-    "@earendil-works/pi-tui": "1.4.0",
+    "@earendil-works/pi-coding-agent": ">=1.2.0 <1.5.0",
+    "@earendil-works/pi-tui": ">=1.2.0 <1.5.0",
   });
   assert.equal(manifest.dependencies, undefined);
   const f = await fixture([], [join(temp, "package/src/index.ts")]);

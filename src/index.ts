@@ -1,9 +1,9 @@
-import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
+import { type ExtensionAPI, type ExtensionCommandContext, VERSION } from "@earendil-works/pi-coding-agent";
 import { statusCard } from "./card.ts";
 import { BackgroundCompaction } from "./controller.ts";
 import { inheritOwnFiles } from "./files.ts";
 import { attachFooter, STATUS_KEY } from "./footer.ts";
-import { loadNativeCompaction } from "./native.ts";
+import { loadNativeCompaction, SUPPORTED_PI, supportsPi, UNTESTED_PI_ENV } from "./native.ts";
 
 export default function precompact(pi: ExtensionAPI): void {
   let controller: BackgroundCompaction | undefined;
@@ -16,16 +16,22 @@ export default function precompact(pi: ExtensionAPI): void {
       const started = new BackgroundCompaction(pi, await loadNativeCompaction());
       controller = started;
       started.reset(ctx, "Waiting for enough context");
+      if (!supportsPi(VERSION) && ctx.hasUI) {
+        ctx.ui.notify(
+          `pi-precompact runs on untested Pi ${VERSION} because ${UNTESTED_PI_ENV}=1.`,
+          "warning",
+        );
+      }
       // Draw the status beside Pi's context usage. Pi's status row stays the fallback.
       if (ctx.mode === "tui") {
         const motion = process.env.PI_PRECOMPACT_MOTION !== "off";
         detachFooter = attachFooter(ctx, () => started.footerState(), { motion });
       }
-    } catch {
+    } catch (error) {
       controller = undefined;
       if (ctx.mode === "tui") ctx.ui.setStatus(STATUS_KEY, "precompact: unavailable");
-      unavailable =
-        "Unsupported Pi installation. Native compaction remains active; Pi 1.4.0 with dist modules is required.";
+      const reason = error instanceof Error ? error.message : "Unsupported Pi installation";
+      unavailable = `${reason}. Native compaction remains active; pi-precompact needs Pi ${SUPPORTED_PI} with dist modules.`;
       if (ctx.hasUI) ctx.ui.notify(unavailable, "warning");
     }
   });
@@ -49,7 +55,7 @@ export default function precompact(pi: ExtensionAPI): void {
   pi.on("session_compact", (event, ctx) => {
     const notice = controller?.compacted(event, ctx);
     if (!notice || !ctx.hasUI) return;
-    // Pi 1.4.0 emits compaction_end synchronously after this event, and its TUI then clears and
+    // Pi emits compaction_end synchronously after this event, and its TUI then clears and
     // rebuilds the chat. Show the notice after that rebuild, or it disappears at once.
     setTimeout(() => {
       try {

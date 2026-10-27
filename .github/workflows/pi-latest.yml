@@ -1,0 +1,35 @@
+name: Newest Pi
+
+# Runs the tests against the newest Pi release every day, so a new Pi version is known to work
+# or to break before users install it. A failed run sends GitHub's usual notification.
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  latest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install the newest Pi
+        run: >-
+          npm install --no-save --ignore-scripts --no-audit --no-fund
+          @earendil-works/pi-coding-agent@latest @earendil-works/pi-ai@latest
+          @earendil-works/pi-tui@latest @earendil-works/pi-agent-core@latest
+      - name: Report the installed Pi versions
+        run: node scripts/pi-versions.mjs
+      - name: Test against the newest Pi
+        # Lets the plugin start on a release outside the tested range; only the range check is skipped.
+        env:
+          PI_PRECOMPACT_ALLOW_UNTESTED_PI: "1"
+        run: npm test

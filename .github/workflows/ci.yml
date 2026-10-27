@@ -35,3 +35,27 @@ jobs:
       - run: npm run check
       - name: Checks leave the repository unchanged
         run: test -z "$(git status --porcelain --untracked-files=all)"
+
+  pi-versions:
+    # Every Pi release in the supported range; keep it in sync with SUPPORTED in src/native.ts.
+    strategy:
+      fail-fast: false
+      matrix:
+        pi: ["1.2.0", "1.3.0", "1.4.0"]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install Pi ${{ matrix.pi }}
+        run: >-
+          npm install --no-save --ignore-scripts --no-audit --no-fund
+          @earendil-works/pi-coding-agent@${{ matrix.pi }} @earendil-works/pi-ai@${{ matrix.pi }}
+          @earendil-works/pi-tui@${{ matrix.pi }} @earendil-works/pi-agent-core@${{ matrix.pi }}
+      - name: Check the installed Pi versions
+        run: node scripts/pi-versions.mjs ${{ matrix.pi }}
+      - run: npm test

@@ -14,7 +14,7 @@ export function isFileDetails(value: unknown): value is { readFiles: string[]; m
   );
 }
 
-/** Pi 1.4.0 does not inherit file details from fromHook entries, even native-shaped ones. */
+/** Pi 1.2 to 1.4 do not inherit file details from fromHook entries, even native-shaped ones. */
 export function inheritOwnFiles(preparation: Preparation, branch: SessionEntry[]): void {
   const previous = getLatestCompactionEntry(branch);
   const details: unknown = previous?.details;

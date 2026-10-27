@@ -2,14 +2,24 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { estimateTokens, SessionManager } from "@earendil-works/pi-coding-agent";
 import { inheritOwnFiles } from "../src/files.ts";
-import { loadNativeCompaction } from "../src/native.ts";
+import { loadNativeCompaction, supportsPi } from "../src/native.ts";
 import { fingerprint, validateResult } from "../src/validation.ts";
 import { assistant, native, result } from "./helpers.ts";
 
 const settings = { enabled: true, reserveTokens: 100, keepRecentTokens: 10 };
 
-test("adapter rejects an unreviewed Pi version", async () => {
-  await assert.rejects(loadNativeCompaction(undefined, "1.5.0"), /1.4.0/);
+test("adapter accepts the tested Pi releases and rejects others unless explicitly allowed", async () => {
+  for (const version of ["1.2.0", "1.3.0", "1.3.7", "1.4.0", "1.4.12"])
+    assert.equal(supportsPi(version), true, version);
+  for (const version of ["1.1.9", "1.5.0", "2.0.0", "1.4.0-beta.1", "1.4", ""]) {
+    assert.equal(supportsPi(version), false, version);
+  }
+  await assert.rejects(
+    loadNativeCompaction(undefined, "1.5.0", false),
+    /supports Pi 1\.2\.0 up to 1\.4\.x, not 1\.5\.0/,
+  );
+  // The opt-in skips only the range check: the installed package must still match the runtime.
+  await assert.rejects(loadNativeCompaction(undefined, "1.5.0", true), /versions do not match/);
 });
 
 test("canonical preparation respects omitted and replaced context", () => {
@@ -85,7 +95,7 @@ test("own fromHook file lists survive subsequent native preparation", () => {
   manager.appendMessage(assistant("new response"));
   const preparation = native.prepareCompaction(manager.getBranch(), settings);
   assert.ok(preparation);
-  assert.equal(preparation.fileOps.read.has("/fixture/read.ts"), false); // Pi 1.4.0 limitation
+  assert.equal(preparation.fileOps.read.has("/fixture/read.ts"), false); // Pi 1.2 to 1.4 limitation
   inheritOwnFiles(preparation, manager.getBranch());
   assert.ok(preparation.fileOps.read.has("/fixture/read.ts"));
   assert.ok(preparation.fileOps.edited.has("/fixture/write.ts"));

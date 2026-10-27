@@ -31,7 +31,9 @@ To apply formatting:
 npm run format
 ```
 
-Do not relax tests to accept an unsupported Pi version. Review the private native adapter before changing the exact SDK pin.
+Do not relax tests to accept an unsupported Pi version. To support a new Pi release, review the private native adapter,
+run the full tests against that release, then widen `SUPPORTED` in `src/native.ts`, the peer ranges, and the `pi-versions`
+CI matrix together. The daily `Newest Pi` workflow shows when a new release passes or breaks the tests.
 Runtime changes need applicable regression and integration tests. Pure tooling changes do not need live-provider calls or GUI tests.
 
 ## Changesets
