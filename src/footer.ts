@@ -134,7 +134,9 @@ export class Reveal implements RevealView {
     }
     if (this.startedAt === undefined) return Infinity;
     const elapsed = this.now() - this.startedAt;
-    // A new width, value or state ends the animation: data first, motion second.
+    // A new width or state ends the animation: data first, motion second. A new context value does not:
+    // Pi's number updates at once, and the fill grows towards it. A tool result usually follows the
+    // first measured response within milliseconds and would otherwise cut the fade-in short.
     if (key !== this.key || elapsed >= REVEAL_MS) {
       this.settle();
       return Infinity;
@@ -376,7 +378,7 @@ export function inlineStatus(
   const context = CONTEXT.exec(plain);
   if (!context) return lines;
   // Before the first measured response Pi shows no usage; show nothing either.
-  const elapsed = reveal.phase(`${width}|${state.state}|${state.applied}|${context[2]}`);
+  const elapsed = reveal.phase(`${width}|${state.state}|${state.applied}`);
   const inline =
     elapsed === undefined
       ? stats

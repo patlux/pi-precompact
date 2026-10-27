@@ -188,6 +188,31 @@ test("TUI: a fresh session shows nothing until the first response, then fades in
   assert.deepEqual(f.errors, []);
 });
 
+test("TUI: a new context value during the fade-in keeps the animation and settles on the new value", async (t) => {
+  const f = await fixture([precompact], [], "tui", { fresh: true });
+  t.after(() => f.close());
+  f.tui.requestRender = () => {};
+  f.manager.appendMessage(assistant("Reading the file", 202));
+  assert.match(plain(f.footer.render(160)[1] ?? ""), /^↑202 [ ─]{26} 0\.2%\/100k \(auto\)/);
+  // A tool result follows a tool call within milliseconds and raises Pi's context value.
+  f.manager.appendMessage({
+    role: "toolResult",
+    toolCallId: "call-1",
+    toolName: "read",
+    content: [{ type: "text", text: "x".repeat(4_000) }],
+    isError: false,
+    timestamp: 4,
+  });
+  const moved = plain(f.footer.render(160)[1] ?? "");
+  const value = /(\d+\.\d%)\/100k/.exec(moved)?.[1];
+  assert.ok(value && value !== "0.2%", `Pi's number follows at once (${value})`);
+  assert.match(moved, /^↑202 [ ─]{26} /, "the bar keeps fading in: no marks yet");
+  await new Promise((resolve) => setTimeout(resolve, REVEAL_MS + 40));
+  const settled = plain(f.footer.render(160)[1] ?? "");
+  assert.match(settled, new RegExp(`^↑202 [━─]+│[━─]+│[━─]+ ${value?.replace(".", "\\.")}/100k \\(auto\\)`));
+  assert.deepEqual(f.errors, []);
+});
+
 test("TUI: PI_PRECOMPACT_MOTION=off shows the final bar with the first response", async (t) => {
   const previous = process.env.PI_PRECOMPACT_MOTION;
   process.env.PI_PRECOMPACT_MOTION = "off";

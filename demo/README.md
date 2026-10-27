@@ -18,9 +18,6 @@ Nothing in this directory is part of the npm package.
 - `video/`: the Remotion film in `docs/media/precompact.mp4` and `precompact.gif`, cut from the same kind of recording.
   See [`video/README.md`](video/README.md).
 
-The first prompt gets a direct answer. When a tool call comes first, its result changes Pi's context value
-a few milliseconds later, and the fade-in ends at once, as the README describes.
-
 ## Record and render
 
 Requirements: Pi 1.4.0, Python 3.9 or later, and Git. Rendering also needs agg, gifsicle, ffmpeg,

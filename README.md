@@ -98,7 +98,8 @@ With the first measured response, the bar fades in once:
 - Pi's numbers appear at once; the bar reserves its columns in the same frame.
 - Each glyph fades from the terminal background to its colour in 120 ms, 5 ms after its left neighbour.
 - The fill grows from 80 to 240 ms. A frame follows every 40 ms; the easing is `cubic-bezier(0.23, 1, 0.32, 1)`.
-- A new width, value, or state during the animation shows the final bar at once.
+- A new width or state during the animation shows the final bar at once. A new context value, such as a tool result
+  right after the first response, updates Pi's number and lets the fill grow towards it.
 - Sessions with earlier responses, for example after `/resume` or `/reload`, show the bar without animation.
 
 <img src="https://raw.githubusercontent.com/patlux/pi-precompact/main/docs/media/reveal.gif" width="690" alt="The context bar fading in after the first measured response, at half speed">
