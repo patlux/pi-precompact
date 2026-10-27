@@ -6,12 +6,7 @@ Pi still decides when to compact. The extension supplies a valid prepared summar
 Inspired by [OpenCode background compaction](https://github.com/anomalyco/opencode/pull/57444).
 This is an independent implementation, not an OpenCode port.
 
-[![A cut of a Pi 1.4.0 session with pi-precompact: the context bar fades in, a summary is prepared while the agent keeps working, and Pi adopts it at its threshold](https://raw.githubusercontent.com/patlux/pi-precompact/main/docs/media/precompact.gif)](https://raw.githubusercontent.com/patlux/pi-precompact/main/docs/media/precompact.mp4)
-
-A 33-second cut of a real Pi 1.4.0 terminal session with this plugin and a 272k context window ([MP4](https://raw.githubusercontent.com/patlux/pi-precompact/main/docs/media/precompact.mp4)).
-The terminal content is Pi's recorded output; camera moves, captions, and speed changes are added in [Remotion](demo/video/README.md).
-A scripted local model from [`demo/`](demo/README.md) reads real files with Pi's `read` tool and reports scripted token usage,
-so the session reaches the thresholds within a minute. The plugin starts at 68%, and Pi compacts at 80%.
+[![pi-precompact in Pi: the context bar fades in, a summary is prepared while the agent keeps working, and Pi adopts it at its threshold](https://raw.githubusercontent.com/patlux/pi-precompact/main/docs/media/precompact.gif)](https://raw.githubusercontent.com/patlux/pi-precompact/main/docs/media/precompact.mp4)
 
 ## Status
 
@@ -108,14 +103,11 @@ With the first measured response, the bar fades in once:
 
 <img src="https://raw.githubusercontent.com/patlux/pi-precompact/main/docs/media/reveal.gif" width="690" alt="The context bar fading in after the first measured response, at half speed">
 
-The clip plays at half speed. The strip shows the last frame before the first measured response, then one frame every 40 ms:
-
 <img src="https://raw.githubusercontent.com/patlux/pi-precompact/main/docs/media/reveal-frames.png" width="690" alt="Nine frames of the fade-in: the wave fades the bar in from the left, then the marks appear and the fill grows">
 
 The plugin asks the terminal for its background colour once, as Pi's theme does.
 Without an answer or without truecolor, each glyph appears directly in its colour as the wave reaches it.
 Set `PI_PRECOMPACT_MOTION=off` before starting Pi to show the bar without animation.
-The design is on pages 04 and 05 of `design/figcraft/footer-status.figcraft`.
 
 Use `/precompact status` for the last event and failure count.
 Pi's `(auto)` context indicator refers to native automatic compaction, not this plugin.
@@ -200,7 +192,6 @@ Persistent omissions and replacements must use Pi's `context_edit` entries.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, Changesets, the commit hook, and the separate release procedure.
 See [CHANGELOG.md](CHANGELOG.md) for release notes.
-The README media come from a real Pi session; [`demo/README.md`](demo/README.md) describes how to record them again.
 
 Prerequisites: Node.js 22.19+, Python 3.11+, Git, npm, Make, and tar.
 
