@@ -131,11 +131,9 @@ To remove it, run `pi remove npm:pi-precompact`.
 5. At native threshold compaction, validate the snapshot and await its result if necessary.
 6. Return the prepared summary to Pi, or let Pi perform normal compaction.
 
-The ceiling is `contextWindow - reserveTokens` with Pi's effective reserve.
-Pi 1.4.0 raises the reserve to at least 20% of the context window unless a model override sets it.
-For a 272,000-token model with a reserve setting up to 54,400 tokens, the ceiling is 217,600 tokens:
-background work starts at 184,960 tokens (68%), and Pi compacts above 217,600 tokens (80%).
-Pi's model overrides and adaptive reserves remain authoritative.
+The ceiling is `contextWindow - reserveTokens`. With Pi's default reserve of 16,384 tokens and a 272,000-token model,
+the ceiling is 255,616 tokens: background work starts at 217,274 tokens (80%), and Pi compacts above 255,616 tokens (94%).
+The extension reads Pi's effective compaction settings, so a changed reserve or a model override moves both marks.
 The extension does not start speculative work after the ceiling is already reached.
 
 A job has a two-minute deadline from its start. Foreground waiting uses the remaining time, not a new two-minute timeout.

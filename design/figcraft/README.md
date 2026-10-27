@@ -24,9 +24,8 @@ Der Code ist die Quelle. Ändert sich dort etwas, wird die Datei nachgezogen, ni
 - Die Zwischenbilder auf 04 und 05 sind in OKLab berechnet, vom Terminal-Hintergrund #2C2E33 zur Zielfarbe.
   Kurve `cubic-bezier(0.23, 1, 0.32, 1)`, Welle 5 ms je Spalte und 120 ms je Zeichen, Füllung 80–240 ms.
   Das Plugin mischt in sRGB, weil `mixColors` in OKLCH Rot über Violett führt; der Unterschied ist kaum sichtbar.
-- Zahlen sind Beispielwerte. Die Schwellen im Entwurf (82,4 % und 97,0 % bei 272k) rechnen mit 8192 Tokens Reserve.
-  Pi 1.4.0 hebt die Reserve auf mindestens 20 % des Fensters an. Bei 272k startet das Plugin deshalb bei 68,0 %,
-  und Pi kompaktiert bei 80,0 %, wie die echte Statuskarte in `docs/media/status-card.png` zeigt.
+- Zahlen sind Beispielwerte. Die Schwellen im Entwurf (82,4 % und 97,0 % bei 272k) gelten für 8192 Tokens Reserve.
+  Mit Pis Standard von 16.384 Tokens startet das Plugin bei 80 %, und Pi kompaktiert bei 94 %.
 - Schrift: MesloLGS Nerd Font 14 px wie in der Ghostty-Konfiguration, 8,44 px pro Spalte, 18 px pro Zeile.
 - Terminalfläche #2C2E33 (Ghostty Sonokai). Farben aus Pis Theme dark; die Legende steht auf Seite 01.
 - Jede Terminalzeile ist ein Textlayer mit farbigen Bereichen.
