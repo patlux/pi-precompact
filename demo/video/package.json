@@ -1,0 +1,29 @@
+{
+  "name": "pi-precompact-video",
+  "private": true,
+  "description": "Remotion film of a recorded pi-precompact session. Not part of the npm package.",
+  "type": "module",
+  "scripts": {
+    "plan": "node scripts/prepare.mjs",
+    "studio": "remotion studio",
+    "draft": "remotion render Film out/draft.mp4 --scale=0.5 --crf=28",
+    "render": "remotion render Film out/precompact.mp4",
+    "poster": "remotion still Film out/poster.png --frame=45",
+    "sheet": "node scripts/sheet.mjs",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "5.3.0",
+    "@fontsource/instrument-serif": "5.3.0",
+    "@fontsource/jetbrains-mono": "5.3.0",
+    "@remotion/cli": "4.0.539",
+    "@xterm/headless": "6.0.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.539"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.2",
+    "typescript": "5.9.3"
+  }
+}

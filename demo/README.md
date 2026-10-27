@@ -13,8 +13,10 @@ Nothing in this directory is part of the npm package.
   It types the prompts, opens the status card, and switches the plugin off.
   It writes an asciicast v2 file and the times of the main events.
   It answers Pi's colour queries with the theme in `record.py`, so the bar fades in from that background.
-- `render.py`: renders `docs/media/` with agg; gifsicle crops the clips and ffmpeg writes the stills and the MP4.
-  Every image is a frame of the recording. Crops select terminal rows; the fade-in clip plays at half speed.
+- `render.py`: renders the stills and the fade-in clip in `docs/media/` with agg; gifsicle crops the clip and ffmpeg
+  writes the stills. Every image is a frame of the recording. Crops select terminal rows; the clip plays at half speed.
+- `video/`: the Remotion film in `docs/media/precompact.mp4` and `precompact.gif`, cut from the same kind of recording.
+  See [`video/README.md`](video/README.md).
 
 The first prompt gets a direct answer. When a tool call comes first, its result changes Pi's context value
 a few milliseconds later, and the fade-in ends at once, as the README describes.

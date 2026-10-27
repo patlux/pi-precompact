@@ -1,0 +1,210 @@
+{
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "theme": {
+    "bg": "#2c2e33",
+    "fg": "#e2e2e3",
+    "palette": [
+      "#181819",
+      "#fc5d7c",
+      "#9ed072",
+      "#e7c664",
+      "#76cce0",
+      "#b39df3",
+      "#f39660",
+      "#e2e2e3",
+      "#7f8490",
+      "#fc5d7c",
+      "#9ed072",
+      "#e7c664",
+      "#76cce0",
+      "#b39df3",
+      "#f39660",
+      "#ffffff"
+    ]
+  },
+  "clips": [
+    {
+      "id": "intro",
+      "from": "prompt1-2.3",
+      "to": "prompt1-0.1",
+      "speed": 1,
+      "shot": {
+        "rows": [-4, -1],
+        "cols": [0, 84]
+      },
+      "caption": {
+        "key": "intro",
+        "label": "Pi extension",
+        "text": "Pi compacts. *Without the wait.*"
+      }
+    },
+    {
+      "id": "answer",
+      "from": "prompt1-0.1",
+      "to": "measured-0.12",
+      "speed": 1,
+      "shot": "bar",
+      "caption": {
+        "key": "first",
+        "label": "01 · First response",
+        "text": "The context bar *fades in.*"
+      }
+    },
+    {
+      "id": "reveal",
+      "from": "measured-0.12",
+      "to": "measured+0.4",
+      "speed": 0.3,
+      "shot": "bar",
+      "caption": {
+        "key": "first",
+        "label": "01 · First response",
+        "text": "The context bar *fades in.*"
+      }
+    },
+    {
+      "id": "marks",
+      "from": "measured+0.4",
+      "to": "measured+2.6",
+      "speed": 1,
+      "shot": "bar",
+      "overlay": "marks",
+      "caption": {
+        "key": "marks",
+        "label": "01 · First response",
+        "text": "Two marks: the plugin's start and *Pi's threshold.*"
+      }
+    },
+    {
+      "id": "grow",
+      "from": "measured+2.6",
+      "to": "answer3-0.3",
+      "speed": 5,
+      "shot": "wide",
+      "caption": {
+        "key": "grow",
+        "label": "02 · Working",
+        "text": "Every turn *fills the context.*"
+      }
+    },
+    {
+      "id": "running",
+      "from": "answer3-0.3",
+      "to": "answer3+2.4",
+      "speed": 1,
+      "shot": {
+        "rows": [-2, -1],
+        "cols": [0, 84]
+      },
+      "overlay": "running",
+      "caption": {
+        "key": "running",
+        "label": "03 · Background",
+        "text": "At {start}, a summary starts *in the background.*"
+      }
+    },
+    {
+      "id": "working",
+      "from": "answer3+2.4",
+      "to": "answer4",
+      "speed": 3,
+      "shot": {
+        "find": "What is checked before Pi adopts the summary?",
+        "at": "answer4",
+        "above": 1,
+        "below": 99
+      },
+      "caption": {
+        "key": "working",
+        "label": "03 · Background",
+        "text": "The agent *keeps working.*"
+      }
+    },
+    {
+      "id": "ready",
+      "from": "answer4",
+      "to": "answer4+2.6",
+      "speed": 1,
+      "shot": {
+        "rows": [-2, -1],
+        "cols": [0, 84]
+      },
+      "overlay": "ready",
+      "caption": {
+        "key": "ready",
+        "label": "04 · Ready",
+        "text": "Ready: the context drops to *{expected}* after adoption."
+      }
+    },
+    {
+      "id": "threshold",
+      "from": "answer4+2.6",
+      "to": "answer5-0.2",
+      "speed": 4,
+      "shot": "wide",
+      "caption": {
+        "key": "threshold",
+        "label": "05 · Threshold",
+        "text": "At {threshold}, *Pi compacts.*"
+      }
+    },
+    {
+      "id": "adopt",
+      "from": "answer5-0.2",
+      "to": "applied+3.2",
+      "speed": 1,
+      "shot": {
+        "find": "Background summary applied",
+        "at": "applied+1",
+        "above": 6,
+        "below": 1,
+        "cols": [0, 84]
+      },
+      "overlay": "notice",
+      "caption": {
+        "key": "adopt",
+        "label": "05 · Threshold",
+        "text": "It takes the prepared summary. *No wait.*"
+      }
+    },
+    {
+      "id": "type",
+      "from": "applied+3.2",
+      "to": "card-0.1",
+      "speed": 2,
+      "shot": "wide",
+      "caption": {
+        "key": "card",
+        "label": "06 · Details",
+        "text": "*/precompact* shows the details."
+      }
+    },
+    {
+      "id": "card",
+      "from": "card-0.1",
+      "to": "card+3.2",
+      "speed": 1,
+      "shot": {
+        "find": "Precompact",
+        "at": "card+2",
+        "above": 0,
+        "below": 10,
+        "cols": [0, 76]
+      },
+      "caption": {
+        "key": "card",
+        "label": "06 · Details",
+        "text": "*/precompact* shows the details."
+      }
+    },
+    {
+      "id": "outro",
+      "at": "card+3.2",
+      "hold": 3.6,
+      "shot": "wide",
+      "outro": true
+    }
+  ]
+}

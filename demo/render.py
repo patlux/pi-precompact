@@ -153,7 +153,6 @@ def main() -> None:
         m = r.marks
         footer = (r.rows - 1, r.rows)
         stats = (r.rows, r.rows)
-        r.clip(0, m["card_closed"] + 0.5, "demo", mp4=True, font_size=28)
         # Half speed: each real 40 ms frame of the reveal shows for 80 ms.
         r.clip(m["measured"] - 0.5, m["measured"] + 0.8, "reveal", speed=0.5, rows=footer, font_size=28)
         # One still before the first measured response, then every 40 ms frame of the 240 ms reveal.
