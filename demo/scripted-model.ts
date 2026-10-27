@@ -1,6 +1,6 @@
 /**
  * Demo only; not part of the npm package. A scripted local model for recording pi-precompact in a
- * real Pi 1.4.0 terminal. It uses no network and no credentials.
+ * real Pi terminal. It uses no network and no credentials.
  *
  * Each prompt from scenario.json reads one file with Pi's real `read` tool, or none, and answers. The
  * usage after each response is scripted, so the context reaches the plugin's start and then Pi's

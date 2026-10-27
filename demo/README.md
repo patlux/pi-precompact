@@ -1,9 +1,11 @@
 # Demo recording
 
-The media in `docs/media/` come from a real Pi 1.4.0 terminal session with this plugin.
+The media in `docs/media/` come from a real terminal session with the official Pi release from npm and this plugin.
 Nothing in this directory is part of the npm package.
 
 - `scenario.json`: the prompts, the file each prompt reads, the scripted usage after each response, and the summary text.
+  The settings keep Pi's default reserve, so the marks match a fresh Pi. They lower `keepRecentTokens` to 6,000,
+  so the short session has history to summarise.
 - `scripted-model.ts`: a Pi extension that registers the local model `demo/scripted` with a 272k context window.
   It reads the scenario's files with Pi's real `read` tool and answers.
   It replaces the usage of each response with the scripted value, as the integration tests do.
@@ -20,11 +22,12 @@ Nothing in this directory is part of the npm package.
 
 ## Record and render
 
-Requirements: Pi 1.4.0, Python 3.9 or later, and Git. Rendering also needs agg, gifsicle, ffmpeg,
+Requirements: Node.js 22 with npm, Python 3.9 or later, Git, fd, and ripgrep. `record.py` installs the official Pi release from
+`package.json` itself; pass `--pi` only to try another executable, not for published media. Rendering also needs agg, gifsicle, ffmpeg,
 and the MesloLGS Nerd Font Mono and DejaVu fonts.
 
 ```sh
-python3 demo/record.py --pi "$(command -v pi)" --out /tmp/precompact-demo/demo
+python3 demo/record.py --out /tmp/precompact-demo/demo
 python3 demo/render.py --cast /tmp/precompact-demo/demo.cast --out docs/media \
   --font-dir <MesloLGS Nerd Font directory> --font-dir <DejaVu fonts directory>
 ```

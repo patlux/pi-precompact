@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""Record pi-precompact in a real Pi 1.4.0 terminal session as an asciicast v2 file.
+"""Record pi-precompact in a real, unmodified Pi terminal session as an asciicast v2 file.
 
-Demo only. Pi runs in a private pseudo-terminal with a temporary HOME, the scripted model from
+Demo only. Without --pi, the official Pi release from package.json's devDependencies is installed
+from npm into the temporary directory, so no locally built or patched Pi ends up in the media.
+Pi runs in a private pseudo-terminal with a temporary HOME, the scripted model from
 scripted-model.ts and a copy of this repository as the project. The driver answers Pi's colour and
 device-attribute queries like a terminal with THEME, so the context bar fades in from that
 background. It writes <out>.cast and <out>.marks.json (seconds of the main events).
@@ -153,13 +155,31 @@ def project(home: Path) -> Path:
     return target
 
 
+def official_pi(directory: Path) -> tuple[str, str]:
+    """Install the Pi release the tests use from npm; return its executable and version."""
+    manifest = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
+    version = manifest["devDependencies"]["@earendil-works/pi-coding-agent"]
+    subprocess.run(
+        ["npm", "install", "--prefix", str(directory), "--no-audit", "--no-fund", "--ignore-scripts",
+         f"@earendil-works/pi-coding-agent@{version}"],
+        check=True, stdout=subprocess.DEVNULL,
+    )
+    return str(directory / "node_modules" / ".bin" / "pi"), version
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--pi", default=shutil.which("pi") or "pi", help="Pi 1.4.0 executable")
+    parser.add_argument(
+        "--pi", default=None, help="a Pi executable instead of the official npm release; media need an unmodified Pi"
+    )
     parser.add_argument("--out", required=True, type=Path, help="output path without extension")
     parser.add_argument("--cols", type=int, default=120)
     parser.add_argument("--rows", type=int, default=30)
     args = parser.parse_args()
+    # Pi runs offline here; without these tools it prints download warnings into the recording.
+    missing = [tool for tool in ("fd", "rg") if shutil.which(tool) is None]
+    if missing:
+        raise SystemExit(f"record.py needs {', '.join(missing)} on PATH")
 
     with tempfile.TemporaryDirectory(prefix="precompact-demo-") as temp:
         # Resolve /var -> /private/var so Pi shortens the project path to ~.
@@ -168,6 +188,12 @@ def main() -> None:
         agent.mkdir(parents=True)
         (agent / "settings.json").write_text(json.dumps(SCENARIO["settings"], indent=2), encoding="utf-8")
         cwd = project(home)
+        if args.pi:
+            pi, source = args.pi, "given executable"
+        else:
+            pi, version = official_pi(Path(os.path.realpath(temp)) / "pi")
+            source = f"@earendil-works/pi-coding-agent@{version} from npm"
+        print(f"Pi: {source}")
         env = {
             "HOME": str(home),
             "PI_CODING_AGENT_DIR": str(agent),
@@ -181,12 +207,13 @@ def main() -> None:
         }
         model = SCENARIO["model"]
         argv = [
-            args.pi, "--no-session",
+            pi, "--no-session",
             "-e", str(ROOT / "demo" / "scripted-model.ts"),
             "-e", str(ROOT / "src" / "index.ts"),
             "--model", f"{model['provider']}/{model['id']}",
         ]
         session = Session(argv, cwd, env, args.cols, args.rows)
+        session.marks["pi"] = source
         failure: BaseException | None = None
         try:
             session.wait_quiet(quiet=1.0, minimum=2.0)

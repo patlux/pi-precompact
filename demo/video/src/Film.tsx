@@ -344,7 +344,7 @@ const Outro: React.FC<{ t: number; start: number }> = ({ t, start }) => {
           marginBottom: 18,
         }}
       >
-        <Mask k={k(0.1)}>PI 1.4.0 EXTENSION</Mask>
+        <Mask k={k(0.1)}>PI EXTENSION</Mask>
       </div>
       <div
         style={{ fontFamily: F.serif, fontSize: 132, lineHeight: 1, color: C.text, letterSpacing: "-0.02em" }}
@@ -377,7 +377,7 @@ const Outro: React.FC<{ t: number; start: number }> = ({ t, start }) => {
           lineHeight: 1.5,
         }}
       >
-        Recorded in a real Pi 1.4.0 terminal. The model is scripted to reach the thresholds quickly.
+        Recorded in an unmodified Pi 1.4.0 from npm. The model is scripted to reach the thresholds quickly.
         <br />
         github.com/patlux/pi-precompact
       </div>

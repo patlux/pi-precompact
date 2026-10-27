@@ -24,7 +24,7 @@ Requirements: Node.js 22 and ffmpeg. Remotion downloads its own headless Chrome 
 Remotion is free for individuals and companies of up to three people; see <https://www.remotion.dev/license>.
 
 ```sh
-python3 ../record.py --pi "$(command -v pi)" --out recording/demo   # optional: a new recording
+python3 ../record.py --out recording/demo   # optional: a new recording with the official Pi
 npm ci
 npm run plan
 npm run draft            # half resolution
