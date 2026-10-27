@@ -3,6 +3,12 @@
 Versions follow SemVer. Future entries come from Markdown changesets.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the release workflow.
 
+## 0.2.3 - 2026-10-27
+
+### Changed
+
+- Keep the README on the plugin: drop the notes about how its media were made.
+
 ## 0.2.2 - 2026-10-27
 
 ### Added
