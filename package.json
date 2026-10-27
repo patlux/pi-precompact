@@ -1,6 +1,6 @@
 {
   "name": "pi-precompact",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Precompute Pi compaction summaries without interrupting the agent.",
   "type": "module",
   "exports": {

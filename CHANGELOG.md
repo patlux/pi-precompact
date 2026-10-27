@@ -3,6 +3,21 @@
 Versions follow SemVer. Future entries come from Markdown changesets.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the release workflow.
 
+## 0.3.0 - 2026-10-27
+
+### Added
+
+- Support Pi 1.2.0 up to 1.4.x instead of 1.4.0 only. CI tests every release in that range and the newest Pi every day. Other versions leave the extension inactive unless PI_PRECOMPACT_ALLOW_UNTESTED_PI=1 is set.
+
+### Changed
+
+- Record the README and gallery media with the official Pi 1.4.0 from npm instead of a locally patched build.
+
+### Fixed
+
+- Keep the context bar's fade-in running when Pi's context value changes during it, for example through a tool result right after the first response.
+- Correct the threshold example in the README: Pi uses the configured reserve, 16,384 tokens by default. The 20% minimum named in 0.2.2 came from a locally patched Pi.
+
 ## 0.2.3 - 2026-10-27
 
 ### Changed
