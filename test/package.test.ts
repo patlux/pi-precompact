@@ -57,7 +57,7 @@ test("actual npm tarball has only runtime files and loads without packaged dev d
   assert.equal(manifest.name, "pi-precompact");
   assert.deepEqual(manifest.pi, {
     extensions: ["./src/index.ts"],
-    video: "https://cdn.jsdelivr.net/gh/patlux/pi-precompact@main/docs/media/demo.mp4",
+    video: "https://cdn.jsdelivr.net/gh/patlux/pi-precompact@main/docs/media/precompact.mp4",
     image: "https://cdn.jsdelivr.net/gh/patlux/pi-precompact@main/docs/media/status-card.png",
   });
   assert.deepEqual(manifest.exports, { ".": "./src/index.ts" });

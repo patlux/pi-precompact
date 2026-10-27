@@ -6,9 +6,10 @@ Pi still decides when to compact. The extension supplies a valid prepared summar
 Inspired by [OpenCode background compaction](https://github.com/anomalyco/opencode/pull/57444).
 This is an independent implementation, not an OpenCode port.
 
-![A Pi 1.4.0 session with pi-precompact: the context bar fades in, a summary is prepared while the agent keeps working, and Pi adopts it at its threshold](https://raw.githubusercontent.com/patlux/pi-precompact/main/docs/media/demo.gif)
+[![A cut of a Pi 1.4.0 session with pi-precompact: the context bar fades in, a summary is prepared while the agent keeps working, and Pi adopts it at its threshold](https://raw.githubusercontent.com/patlux/pi-precompact/main/docs/media/precompact.gif)](https://raw.githubusercontent.com/patlux/pi-precompact/main/docs/media/precompact.mp4)
 
-A real Pi 1.4.0 terminal session with this plugin and a 272k context window.
+A 33-second cut of a real Pi 1.4.0 terminal session with this plugin and a 272k context window ([MP4](https://raw.githubusercontent.com/patlux/pi-precompact/main/docs/media/precompact.mp4)).
+The terminal content is Pi's recorded output; camera moves, captions, and speed changes are added in [Remotion](demo/video/README.md).
 A scripted local model from [`demo/`](demo/README.md) reads real files with Pi's `read` tool and reports scripted token usage,
 so the session reaches the thresholds within a minute. The plugin starts at 68%, and Pi compacts at 80%.
 
