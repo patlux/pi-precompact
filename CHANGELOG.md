@@ -3,6 +3,16 @@
 Versions follow SemVer. Future entries come from Markdown changesets.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the release workflow.
 
+## 0.2.2 - 2026-10-27
+
+### Added
+
+- Show a recorded Pi session, the footer states, the fade-in, and the status card in the README and the Pi gallery. Correct the threshold example: Pi 1.4.0 reserves at least 20% of the context window.
+
+### Fixed
+
+- Show the notice for an adopted background summary in the TUI. Pi rebuilt its chat right after the plugin added the notice, so the notice disappeared at once.
+
 ## 0.2.1 - 2026-10-27
 
 ### Fixed
