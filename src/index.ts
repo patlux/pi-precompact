@@ -3,7 +3,13 @@ import { statusCard } from "./card.ts";
 import { BackgroundCompaction } from "./controller.ts";
 import { inheritOwnFiles } from "./files.ts";
 import { attachFooter, STATUS_KEY } from "./footer.ts";
-import { loadNativeCompaction, SUPPORTED_PI, supportsPi, UNTESTED_PI_ENV } from "./native.ts";
+import {
+  hasPackageMetadata,
+  loadNativeCompaction,
+  SUPPORTED_PI,
+  supportsPi,
+  UNTESTED_PI_ENV,
+} from "./native.ts";
 
 export default function precompact(pi: ExtensionAPI): void {
   let controller: BackgroundCompaction | undefined;
@@ -12,6 +18,14 @@ export default function precompact(pi: ExtensionAPI): void {
   pi.on("session_start", async (_event, ctx) => {
     detachFooter?.();
     detachFooter = undefined;
+    if (!hasPackageMetadata()) {
+      // Standalone binary hosts (the Rust port, for example) ship no package to import, so
+      // precompaction cannot run. Keep the status honest without a warning on every start.
+      controller = undefined;
+      unavailable = "No Pi package next to the running binary; native compaction remains active";
+      if (ctx.mode === "tui") ctx.ui.setStatus(STATUS_KEY, "precompact: unavailable");
+      return;
+    }
     try {
       const started = new BackgroundCompaction(pi, await loadNativeCompaction());
       controller = started;

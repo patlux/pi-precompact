@@ -133,3 +133,17 @@ test("size validation includes replayed system prompt exactly as native append d
     manager.buildSessionProjection().messages.reduce((sum, message) => sum + estimateTokens(message), 0),
   );
 });
+
+test("recognizes hosts that ship no Pi package next to the binary", async () => {
+  const { mkdtemp, writeFile } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { hasPackageMetadata } = await import("../src/native.ts");
+
+  const withoutPackage = await mkdtemp(join(tmpdir(), "precompact-nopkg-"));
+  assert.equal(hasPackageMetadata(withoutPackage), false, "a standalone binary host has no package");
+
+  const withPackage = await mkdtemp(join(tmpdir(), "precompact-pkg-"));
+  await writeFile(join(withPackage, "package.json"), "{}");
+  assert.equal(hasPackageMetadata(withPackage), true, "an installed Pi package is detected");
+});

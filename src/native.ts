@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -44,6 +45,15 @@ export function supportsPi(version: string): boolean {
   if (!match) return false;
   const parts = match.slice(1).map(Number);
   return compareVersions(parts, SUPPORTED[0]) >= 0 && compareVersions(parts, SUPPORTED[1]) < 0;
+}
+
+/**
+ * Whether the host ships a Pi package next to `getPackageDir()`. Standalone binary builds, such
+ * as the Rust port, do not: they have no `dist` modules to import, so native compaction is the
+ * only path and the extension stays quiet instead of warning at every start.
+ */
+export function hasPackageMetadata(root = getPackageDir()): boolean {
+  return existsSync(join(root, "package.json"));
 }
 
 /** The one private API dependency. Never ship a copied preparation algorithm. */
