@@ -1,6 +1,6 @@
 # pi-precompact
 
-This is an experimental Pi extension for Pi 1.2.0 up to 1.4.x.
+This is an experimental Pi extension for Pi 1.2.0 up to 1.5.x.
 
 - Widen the supported Pi range only together with `SUPPORTED` in `src/native.ts`, the peer ranges in `package.json`, and the `pi-versions` matrix in `.github/workflows/ci.yml`, after the full tests pass against that release.
 

@@ -31,9 +31,9 @@ function isNativeCompaction(value: unknown): value is NativeCompaction {
 /** The Pi releases that CI tests, as [first supported, first unsupported]. Patch releases count. */
 const SUPPORTED: [number[], number[]] = [
   [1, 2, 0],
-  [1, 5, 0],
+  [1, 6, 0],
 ];
-export const SUPPORTED_PI = "1.2.0 up to 1.4.x";
+export const SUPPORTED_PI = "1.2.0 up to 1.5.x";
 /** Set to 1 to run on an untested Pi release at the user's own risk. */
 export const UNTESTED_PI_ENV = "PI_PRECOMPACT_ALLOW_UNTESTED_PI";
 

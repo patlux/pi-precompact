@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { fauxAssistantMessage, Type } from "@earendil-works/pi-ai";
+import { fauxAssistantMessage } from "@earendil-works/pi-ai";
 import type { ExtensionContext, ExtensionFactory } from "@earendil-works/pi-coding-agent";
+// Pi 1.5 stopped re-exporting TypeBox from pi-ai; extensions import it directly.
+import { Type } from "typebox";
 import precompact from "../src/index.ts";
 import { assistant, beforeEvent, deferred, fixture, flush } from "./helpers.ts";
 
