@@ -3,6 +3,16 @@
 Versions follow SemVer. Future entries come from Markdown changesets.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the release workflow.
 
+## 0.4.0 - 2026-11-02
+
+### Added
+
+- Support Pi 1.5.x. The extension now works on Pi 1.2.0 up to 1.5.x, and CI tests Pi 1.5.0 as well.
+
+### Fixed
+
+- Stay quiet on hosts that ship no Pi package, such as standalone binary builds
+
 ## 0.3.0 - 2026-10-27
 
 ### Added
