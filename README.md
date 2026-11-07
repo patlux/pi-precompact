@@ -110,6 +110,20 @@ The plugin asks the terminal for its background colour once, as Pi's theme does.
 Without an answer or without truecolor, each glyph appears directly in its colour as the wave reaches it.
 Set `PI_PRECOMPACT_MOTION=off` before starting Pi to show the bar without animation.
 
+### Underline instead of the bar
+
+The bar is the default. Set `PI_PRECOMPACT_FOOTER=underline` before starting Pi to underline Pi's context segment instead.
+At 91.6%, the underline runs below the first 16 of the 17 columns of `91.6%/272k (auto)`.
+
+- The underline covers the same share of the segment as the context fills the window. It adds no columns, at any width.
+- Its colour is the state colour of the bar's fill. Pi's text and colours stay as they are.
+- The suffix after the segment is the same as with the bar. The fade-in grows the underline like the fill.
+- There are no marks for the plugin's start and Pi's threshold.
+- The colour uses SGR 58 (kitty, Ghostty, WezTerm, iTerm2; tmux 3.0+ passes it through with the `usstyle` feature).
+  Other terminals draw the underline in the text colour.
+
+Any other value keeps the bar and shows a warning.
+
 Use `/precompact status` for the last event and failure count.
 Pi's `(auto)` context indicator refers to native automatic compaction, not this plugin.
 

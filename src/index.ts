@@ -2,7 +2,7 @@ import { type ExtensionAPI, type ExtensionCommandContext, VERSION } from "@earen
 import { statusCard } from "./card.ts";
 import { BackgroundCompaction } from "./controller.ts";
 import { inheritOwnFiles } from "./files.ts";
-import { attachFooter, STATUS_KEY } from "./footer.ts";
+import { attachFooter, FOOTER_STYLE_ENV, footerStyle, STATUS_KEY } from "./footer.ts";
 import {
   hasPackageMetadata,
   loadNativeCompaction,
@@ -39,7 +39,13 @@ export default function precompact(pi: ExtensionAPI): void {
       // Draw the status beside Pi's context usage. Pi's status row stays the fallback.
       if (ctx.mode === "tui") {
         const motion = process.env.PI_PRECOMPACT_MOTION !== "off";
-        detachFooter = attachFooter(ctx, () => started.footerState(), { motion });
+        const { style, unknown } = footerStyle(process.env[FOOTER_STYLE_ENV]);
+        if (unknown)
+          ctx.ui.notify(
+            `pi-precompact: unknown ${FOOTER_STYLE_ENV}; use bar or underline. Showing bar.`,
+            "warning",
+          );
+        detachFooter = attachFooter(ctx, () => started.footerState(), { motion, style });
       }
     } catch (error) {
       controller = undefined;

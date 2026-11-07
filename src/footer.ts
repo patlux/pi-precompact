@@ -3,6 +3,7 @@ import type { ExtensionContext, FooterComponent, SessionEntry } from "@earendil-
 import {
   type Color,
   type Component,
+  foregroundAnsi,
   getTerminalColorMode,
   mixColors,
   rgbColor,
@@ -19,6 +20,16 @@ type Render = FooterComponent["render"];
 type Segment = readonly [text: string, token: Token];
 
 export const STATUS_KEY = "precompact";
+export const FOOTER_STYLE_ENV = "PI_PRECOMPACT_FOOTER";
+/** `bar`: the context bar before Pi's segment. `underline`: Pi's segment underlined, no extra columns. */
+export type FooterStyle = "bar" | "underline";
+
+/** The configured footer style; anything but `underline` keeps the default bar. */
+export function footerStyle(value: string | undefined): { style: FooterStyle; unknown: boolean } {
+  const text = value?.trim().toLowerCase() ?? "";
+  if (text === "underline") return { style: "underline", unknown: false };
+  return { style: "bar", unknown: text !== "" && text !== "bar" };
+}
 const WIDGET_KEY = "precompact-footer";
 /** Marks our render wrapper. `Symbol.for` keeps the key stable across extension reloads. */
 const MARK = Symbol.for("pi-precompact.footer-render");
@@ -29,6 +40,9 @@ const CELLS = 24;
 const CONTEXT = /(^| )(\d+(?:\.\d+)?%|\?)(\/\d+(?:\.\d+)?[kM]?)( \(auto\))?(?= |$)/;
 // A slice keeps the opening colour of its text but not the closing code.
 const RESET_FG = "\x1b[39m";
+const UNDERLINE_ON = "\x1b[4m";
+// 24 ends the underline, 59 restores the default underline colour.
+const UNDERLINE_OFF = "\x1b[24m\x1b[59m";
 const STATE_COLOR: Record<Label, Token> = {
   idle: "dim",
   running: "accent",
@@ -331,6 +345,52 @@ function barStats(
   return replaceUpToContext(stats, plain, context, left, width);
 }
 
+/**
+ * SGR 58 in its colon form, as kitty, Ghostty, WezTerm and iTerm2 read it. Pi's ANSI tracker ignores
+ * colon parameters; the semicolon form would make it read the 2 in `58;2;…` as dim when it re-opens
+ * styles after a wrap. Terminals without underline colours draw the underline in the text colour.
+ */
+function underlineColor(color: Color): string {
+  // "\x1b[38;5;Nm" or "\x1b[38;2;R;G;Bm" in the terminal's colour mode.
+  const [, kind, ...values] = foregroundAnsi(color, getTerminalColorMode()).slice(2, -1).split(";");
+  if (kind === "5" && values.length === 1) return `\x1b[58:5:${values[0]}m`;
+  if (kind === "2" && values.length === 3) return `\x1b[58:2::${values.join(":")}m`;
+  return "";
+}
+
+/** Pi's context segment underlined as far as the context is filled; the suffix as with the bar. */
+function underlineStats(
+  stats: string,
+  plain: string,
+  context: RegExpExecArray,
+  state: FooterState,
+  theme: Theme,
+  width: number,
+  elapsed: number,
+  background: Color | undefined,
+) {
+  const [, lead = "", percentText = "", windowText = "", autoText = ""] = context;
+  const column = visibleWidth(plain.slice(0, context.index + lead.length));
+  const percent = percentText === "?" ? null : Number.parseFloat(percentText);
+  const segment = visibleWidth(percentText + windowText + autoText);
+  const measured = percent === null ? 0 : Math.round((Math.min(Math.max(percent, 0), 100) / 100) * segment);
+  // The fade-in grows the underline like the bar's fill.
+  const length =
+    elapsed === Infinity ? measured : Math.round(measured * progress(elapsed, FILL_START_MS, FILL_MS));
+  const token = state.applied ? "muted" : FILL_COLOR[state.state];
+  const underlined =
+    length > 0
+      ? `${UNDERLINE_ON}${underlineColor(theme.colors[token])}${sliceByColumn(stats, column, length)}${UNDERLINE_OFF}`
+      : "";
+  const rest = length < segment ? sliceByColumn(stats, column + length, segment - length) : "";
+  const paint = painter(theme, elapsed, background);
+  const suffix = suffixOf(state, percent)
+    .map(([text, color]) => paint(text, color, segment))
+    .join("");
+  const left = `${sliceByColumn(stats, 0, column)}${underlined}${rest}${RESET_FG}${suffix}`;
+  return replaceUpToContext(stats, plain, context, left, width);
+}
+
 /** Compact form: Pi's context segment unchanged, then the coloured state. */
 function textStats(
   stats: string,
@@ -370,6 +430,7 @@ export function inlineStatus(
   theme: Theme,
   width: number,
   reveal: RevealView = SETTLED,
+  style: FooterStyle = "bar",
 ): string[] {
   if (!state || !statuses || statuses.get(STATUS_KEY) !== `precompact: ${state.state}`) return lines;
   if (lines.length !== 3 || lines[2] !== statusRow(statuses, theme, width)) return lines;
@@ -379,12 +440,16 @@ export function inlineStatus(
   if (!context) return lines;
   // Before the first measured response Pi shows no usage; show nothing either.
   const elapsed = reveal.phase(`${width}|${state.state}|${state.applied}`);
-  const inline =
+  const decorated =
     elapsed === undefined
-      ? stats
-      : ((width >= BAR_MIN_WIDTH
+      ? undefined
+      : style === "underline"
+        ? underlineStats(stats, plain, context, state, theme, width, elapsed, reveal.background)
+        : width >= BAR_MIN_WIDTH
           ? barStats(stats, plain, context, state, theme, width, elapsed, reveal.background)
-          : undefined) ?? textStats(stats, plain, context, state, theme, width));
+          : undefined;
+  const inline =
+    elapsed === undefined ? stats : (decorated ?? textStats(stats, plain, context, state, theme, width));
   if (inline === undefined) return lines;
   const rest = statusRow(statuses, theme, width, true);
   return rest === undefined ? [lines[0], inline] : [lines[0], inline, rest];
@@ -399,6 +464,7 @@ export function decorateFooter(
   theme: Theme,
   state: () => FooterState | undefined,
   reveal: RevealView = SETTLED,
+  style: FooterStyle = "bar",
 ) {
   // Drop our own inactive wrappers from earlier runtimes when they are on top.
   for (let mark = markOf(footer.render); mark && !mark.active; mark = markOf(footer.render)) {
@@ -408,7 +474,7 @@ export function decorateFooter(
   let active = true;
   const render = function (this: FooterComponent, width: number): string[] {
     const lines = original.call(this, width);
-    return active ? inlineStatus(lines, readStatuses(this), state(), theme, width, reveal) : lines;
+    return active ? inlineStatus(lines, readStatuses(this), state(), theme, width, reveal, style) : lines;
   };
   const mark: Mark = {
     original,
@@ -433,7 +499,7 @@ export function decorateFooter(
 export function attachFooter(
   ctx: ExtensionContext,
   state: () => FooterState | undefined,
-  options: { motion: boolean },
+  options: { motion: boolean; style?: FooterStyle },
 ): () => void {
   let undo: (() => void) | undefined;
   let reveal: Reveal | undefined;
@@ -443,7 +509,7 @@ export function attachFooter(
       const footer = findBuiltInFooter(tui.children);
       const current = new Reveal(ctx.sessionManager, options.motion, () => tui.requestRender());
       reveal = current;
-      undo = footer ? decorateFooter(footer, theme, state, current) : undefined;
+      undo = footer ? decorateFooter(footer, theme, state, current, options.style) : undefined;
       // The fade needs the real terminal background. Without an answer or truecolor,
       // each glyph appears in its final colour when the wave reaches it.
       if (footer && current.pending && getTerminalColorMode() === "truecolor") {
