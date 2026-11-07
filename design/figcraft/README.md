@@ -13,12 +13,14 @@ Der Code ist die Quelle. Ändert sich dort etwas, wird die Datei nachgezogen, ni
 | 03 Kreative Ideen | K1–K7, Favorit K4 + K2 (später K1), Bewertung |
 | 04 Einblenden | Leiste erst ab der ersten Antwort, Ablauf in 7 Bildern (240 ms), Zeitachse, Regeln, verworfene Varianten |
 | 05 Prototyp Einblenden | Abspielbarer Flow „Einblenden“: acht Terminal-Bilder, zeitgesteuert verkettet |
+| 06 Ohne großen Balken | A0 (Leiste aus 0.4.0) und Alternativen A1–A6, Empfehlung A4 (+ A3), Bewertung |
 
 ## Quelle und Darstellung
 
 - Seite 01 ist aus Pis echtem `FooterComponent` 1.4.0 gerendert, mit pi-precompact `de95728`
   und dem damaligen Status neben `(auto)`: 120 Spalten, Theme dark, Truecolor.
-- Seiten 02 bis 05 sind Entwürfe nach denselben Ausrichtungs- und Farbregeln. Sie sind nicht gerendert.
+- Seiten 02 bis 06 sind Entwürfe nach denselben Ausrichtungs- und Farbregeln. Sie sind nicht gerendert.
+- Seite 06 nutzt schon `pre` und Pis Standardschwellen (Start 80 %, Pi kompaktiert bei 94 % von 272k).
 - Die Entwürfe zeigen noch die frühere Kurzform `bg` (`bg: idle`, `bg compact: idle`). Das Plugin zeigt heute
   `pre` im Footer und `precompact: <state>` in Pis Statuszeile.
 - Die Zwischenbilder auf 04 und 05 sind in OKLab berechnet, vom Terminal-Hintergrund #2C2E33 zur Zielfarbe.
