@@ -3,4 +3,4 @@ type: added
 bump: minor
 ---
 
-Add `PI_PRECOMPACT_FOOTER=underline`: underline Pi's context segment in the state colour instead of drawing the bar. The bar stays the default.
+Add the `underline` footer style: Pi's context segment is underlined in the state colour instead of the bar. The bar stays the default.

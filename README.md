@@ -108,11 +108,12 @@ With the first measured response, the bar fades in once:
 
 The plugin asks the terminal for its background colour once, as Pi's theme does.
 Without an answer or without truecolor, each glyph appears directly in its colour as the wave reaches it.
-Set `PI_PRECOMPACT_MOTION=off` before starting Pi to show the bar without animation.
+Set `"motion": false` in the [configuration](#configuration) to show the bar without animation.
 
 ### Underline instead of the bar
 
-The bar is the default. Set `PI_PRECOMPACT_FOOTER=underline` before starting Pi to underline Pi's context segment instead.
+The bar is the default. Set `"footer": "underline"` in the [configuration](#configuration) to underline Pi's
+context segment instead.
 At 91.6%, the underline runs below the first 16 of the 17 columns of `91.6%/272k (auto)`.
 
 - The underline covers the same share of the segment as the context fills the window. It adds no columns, at any width.
@@ -121,8 +122,6 @@ At 91.6%, the underline runs below the first 16 of the 17 columns of `91.6%/272k
 - There are no marks for the plugin's start and Pi's threshold.
 - The colour uses SGR 58 (kitty, Ghostty, WezTerm, iTerm2; tmux 3.0+ passes it through with the `usstyle` feature).
   Other terminals draw the underline in the text colour.
-
-Any other value keeps the bar and shows a warning.
 
 Use `/precompact status` for the last event and failure count.
 Pi's `(auto)` context indicator refers to native automatic compaction, not this plugin.
@@ -135,6 +134,30 @@ Custom footers are left alone. Shutdown and reload restore Pi's method and clear
 JSON, print, and RPC modes receive no terminal status or footer decoration.
 
 To remove it, run `pi remove npm:pi-precompact`.
+
+## Configuration
+
+The extension reads an optional JSON file when a session starts:
+
+1. `~/.pi/agent/extensions/precompact.json` (or below `PI_CODING_AGENT_DIR`)
+2. `.pi/precompact.json` in the project, only when Pi trusts the project
+3. Environment variables, which override both files
+
+```json
+{
+  "footer": "underline",
+  "motion": false
+}
+```
+
+| Key | Values | Default | Environment |
+| --- | --- | --- | --- |
+| `footer` | `"bar"`, `"underline"` | `"bar"` | `PI_PRECOMPACT_FOOTER=bar\|underline` |
+| `motion` | `true`, `false` | `true` | `PI_PRECOMPACT_MOTION=on\|off` |
+
+A later source replaces only the keys it sets. An invalid value or an unknown key keeps the previous value,
+and the TUI shows one warning with every problem. A file that is not valid JSON is skipped as a whole.
+Changes take effect in new sessions and after `/reload`.
 
 ## Scheduling
 

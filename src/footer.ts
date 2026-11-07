@@ -12,6 +12,7 @@ import {
   truncateToWidth,
   visibleWidth,
 } from "@earendil-works/pi-tui";
+import type { FooterStyle } from "./config.ts";
 import type { FooterState, Label } from "./controller.ts";
 
 type Theme = ExtensionContext["ui"]["theme"];
@@ -20,16 +21,6 @@ type Render = FooterComponent["render"];
 type Segment = readonly [text: string, token: Token];
 
 export const STATUS_KEY = "precompact";
-export const FOOTER_STYLE_ENV = "PI_PRECOMPACT_FOOTER";
-/** `bar`: the context bar before Pi's segment. `underline`: Pi's segment underlined, no extra columns. */
-export type FooterStyle = "bar" | "underline";
-
-/** The configured footer style; anything but `underline` keeps the default bar. */
-export function footerStyle(value: string | undefined): { style: FooterStyle; unknown: boolean } {
-  const text = value?.trim().toLowerCase() ?? "";
-  if (text === "underline") return { style: "underline", unknown: false };
-  return { style: "bar", unknown: text !== "" && text !== "bar" };
-}
 const WIDGET_KEY = "precompact-footer";
 /** Marks our render wrapper. `Symbol.for` keeps the key stable across extension reloads. */
 const MARK = Symbol.for("pi-precompact.footer-render");

@@ -1,8 +1,9 @@
 import { type ExtensionAPI, type ExtensionCommandContext, VERSION } from "@earendil-works/pi-coding-agent";
 import { statusCard } from "./card.ts";
+import { loadConfig } from "./config.ts";
 import { BackgroundCompaction } from "./controller.ts";
 import { inheritOwnFiles } from "./files.ts";
-import { attachFooter, FOOTER_STYLE_ENV, footerStyle, STATUS_KEY } from "./footer.ts";
+import { attachFooter, STATUS_KEY } from "./footer.ts";
 import {
   hasPackageMetadata,
   loadNativeCompaction,
@@ -38,14 +39,16 @@ export default function precompact(pi: ExtensionAPI): void {
       }
       // Draw the status beside Pi's context usage. Pi's status row stays the fallback.
       if (ctx.mode === "tui") {
-        const motion = process.env.PI_PRECOMPACT_MOTION !== "off";
-        const { style, unknown } = footerStyle(process.env[FOOTER_STYLE_ENV]);
-        if (unknown)
-          ctx.ui.notify(
-            `pi-precompact: unknown ${FOOTER_STYLE_ENV}; use bar or underline. Showing bar.`,
-            "warning",
-          );
-        detachFooter = attachFooter(ctx, () => started.footerState(), { motion, style });
+        // loadConfig never throws: unreadable files and invalid values become warnings.
+        const { config, warnings } = await loadConfig({
+          cwd: ctx.cwd,
+          projectTrusted: ctx.isProjectTrusted(),
+        });
+        if (warnings.length > 0) ctx.ui.notify(`pi-precompact config:\n${warnings.join("\n")}`, "warning");
+        detachFooter = attachFooter(ctx, () => started.footerState(), {
+          motion: config.motion,
+          style: config.footer,
+        });
       }
     } catch (error) {
       controller = undefined;

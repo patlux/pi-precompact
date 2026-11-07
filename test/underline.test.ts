@@ -3,8 +3,9 @@ import { test } from "node:test";
 import { stripVTControlCharacters } from "node:util";
 import { FooterComponent } from "@earendil-works/pi-coding-agent";
 import { visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
+import { FOOTER_ENV } from "../src/config.ts";
 import type { FooterState } from "../src/controller.ts";
-import { FOOTER_STYLE_ENV, footerStyle, inlineStatus, type RevealView, STATUS_KEY } from "../src/footer.ts";
+import { inlineStatus, type RevealView, STATUS_KEY } from "../src/footer.ts";
 import precompact from "../src/index.ts";
 import { fixture } from "./helpers.ts";
 
@@ -23,27 +24,19 @@ function underlined(line: string): string | undefined {
   return match ? plain(match[1] ?? "") : undefined;
 }
 
-function withStyle(value: string | undefined, t: { after: (fn: () => void) => void }) {
-  const previous = process.env[FOOTER_STYLE_ENV];
-  if (value === undefined) delete process.env[FOOTER_STYLE_ENV];
-  else process.env[FOOTER_STYLE_ENV] = value;
+function withFooterEnv(value: string | undefined, t: { after: (fn: () => void) => void }) {
+  const previous = process.env[FOOTER_ENV];
+  if (value === undefined) delete process.env[FOOTER_ENV];
+  else process.env[FOOTER_ENV] = value;
   t.after(() => {
-    if (previous === undefined) delete process.env[FOOTER_STYLE_ENV];
-    else process.env[FOOTER_STYLE_ENV] = previous;
+    if (previous === undefined) delete process.env[FOOTER_ENV];
+    else process.env[FOOTER_ENV] = previous;
   });
 }
 
-test("footerStyle: bar is the default; only underline selects the alternative", () => {
-  assert.deepEqual(footerStyle(undefined), { style: "bar", unknown: false });
-  assert.deepEqual(footerStyle(""), { style: "bar", unknown: false });
-  assert.deepEqual(footerStyle("bar"), { style: "bar", unknown: false });
-  assert.deepEqual(footerStyle(" Underline "), { style: "underline", unknown: false });
-  assert.deepEqual(footerStyle("dots"), { style: "bar", unknown: true });
-});
-
-test(`TUI: ${FOOTER_STYLE_ENV}=underline underlines Pi's segment instead of drawing the bar`, async (t) => {
-  withStyle("underline", t);
-  const f = await fixture([precompact], [], "tui");
+test('TUI: config { "footer": "underline" } underlines Pi\'s segment instead of drawing the bar', async (t) => {
+  withFooterEnv(undefined, t);
+  const f = await fixture([precompact], [], "tui", { config: { footer: "underline" } });
   t.after(() => f.close());
   const before = native.call(f.footer, 160);
   const lines = f.footer.render(160);
@@ -128,10 +121,23 @@ test("underline: the fade-in grows it, and Pi's wrapping keeps it closed per lin
   }
 });
 
-test(`an unknown ${FOOTER_STYLE_ENV} keeps the bar and warns once`, async (t) => {
-  withStyle("dots", t);
-  const f = await fixture([precompact], [], "tui");
+test(`${FOOTER_ENV} overrides the config file in both directions`, async (t) => {
+  withFooterEnv("bar", t);
+  const bar = await fixture([precompact], [], "tui", { config: { footer: "underline" } });
+  t.after(() => bar.close());
+  assert.match(plain(bar.footer.render(160)[1] ?? ""), /│─{3} 79\.0%\/100k \(auto\)/);
+  process.env[FOOTER_ENV] = "underline";
+  const underline = await fixture([precompact], [], "tui");
+  t.after(() => underline.close());
+  assert.equal(underlined(underline.footer.render(160)[1] ?? ""), "79.0%/100k (a");
+});
+
+test("an invalid footer in the config keeps the bar and warns once", async (t) => {
+  withFooterEnv(undefined, t);
+  const f = await fixture([precompact], [], "tui", { config: { footer: "dots" } });
   t.after(() => f.close());
   assert.match(plain(f.footer.render(160)[1] ?? ""), /│─{3} 79\.0%\/100k \(auto\)/);
-  assert.equal(f.notices.filter((notice) => notice.includes(FOOTER_STYLE_ENV)).length, 1);
+  const warnings = f.notices.filter((notice) => notice.startsWith("pi-precompact config:"));
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0] ?? "", /precompact\.json: "footer" must be "bar" or "underline"/);
 });

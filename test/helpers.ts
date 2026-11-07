@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -83,9 +83,17 @@ export async function fixture(
   extensions: ExtensionFactory[] = [],
   additionalExtensionPaths: string[] = [],
   mode: ExtensionContext["mode"] = "json",
-  options: { fresh?: boolean } = {},
+  options: { fresh?: boolean; config?: unknown } = {},
 ) {
   const dir = await mkdtemp(join(tmpdir(), "pi-background-test-"));
+  // Pi's getAgentDir() follows PI_CODING_AGENT_DIR. Point it at the test directory so that no test
+  // reads the global precompact.json of the machine it runs on.
+  const previousAgentDir = process.env.PI_CODING_AGENT_DIR;
+  process.env.PI_CODING_AGENT_DIR = join(dir, "agent");
+  if (options.config !== undefined) {
+    await mkdir(join(dir, "agent", "extensions"), { recursive: true });
+    await writeFile(join(dir, "agent", "extensions", "precompact.json"), JSON.stringify(options.config));
+  }
   const provider = fauxProvider({
     provider: "test-background",
     api: "test-background",
@@ -213,6 +221,8 @@ export async function fixture(
     async close() {
       await session.extensionRunner.emit({ type: "session_shutdown", reason: "quit" });
       session.dispose();
+      if (previousAgentDir === undefined) delete process.env.PI_CODING_AGENT_DIR;
+      else process.env.PI_CODING_AGENT_DIR = previousAgentDir;
       await rm(dir, { recursive: true, force: true });
     },
   };
