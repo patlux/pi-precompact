@@ -3,6 +3,14 @@
 Versions follow SemVer. Future entries come from Markdown changesets.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the release workflow.
 
+## 0.5.0 - 2026-11-08
+
+### Added
+
+- Add the `underline` footer style: Pi's context segment is underlined in the state colour instead of the bar. The bar stays the default.
+- Read `footer` and `motion` from `~/.pi/agent/extensions/precompact.json` and from `.pi/precompact.json` in trusted projects. `PI_PRECOMPACT_FOOTER` and `PI_PRECOMPACT_MOTION` override the files.
+- Add three smaller footer styles: `short` (an 8-cell bar), `block` (one glyph that fills up towards Pi's threshold), and `text` (the tokens left until the plugin starts, and the running time).
+
 ## 0.4.0 - 2026-11-02
 
 ### Added
