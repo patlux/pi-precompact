@@ -62,10 +62,13 @@ test("underline: the state picks the colour and the suffix; ? has no underline",
   t.after(() => f.close());
   const theme = f.ctx.ui.theme;
   const color = (token: "muted" | "accent" | "success" | "warning" | "dim") => {
+    // The same colour as the foreground, in the terminal's mode: truecolor or 256 colours (CI).
     const ansi = theme.fg(token, "x");
     const rgb = sgr("⎋\\[38;2;(\\d+);(\\d+);(\\d+)m").exec(ansi);
-    assert.ok(rgb, "truecolor test theme");
-    return `\x1b[58:2::${rgb[1]}:${rgb[2]}:${rgb[3]}m`;
+    if (rgb) return `\x1b[58:2::${rgb[1]}:${rgb[2]}:${rgb[3]}m`;
+    const indexed = sgr("⎋\\[38;5;(\\d+)m").exec(ansi);
+    assert.ok(indexed, JSON.stringify(ansi));
+    return `\x1b[58:5:${indexed[1]}m`;
   };
   const cases: [FooterState, string, ReturnType<typeof color>][] = [
     [{ state: "idle", applied: false, ...marks }, "79.0%/100k (auto)", color("muted")],
