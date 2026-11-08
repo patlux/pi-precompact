@@ -32,6 +32,20 @@ python3 demo/render.py --cast /tmp/precompact-demo/demo.cast --out docs/media \
   --font-dir <MesloLGS Nerd Font directory> --font-dir <DejaVu fonts directory>
 ```
 
+The images of the footer styles (`docs/media/footer-<style>.png`) need one recording per style.
+`--footer` writes the style into the temporary `precompact.json`; `--footer-style` renders only that image
+and checks that the recording used the style:
+
+```sh
+for style in bar short block text underline; do
+  python3 demo/record.py --footer "$style" --out "/tmp/precompact-demo/$style"
+  python3 demo/render.py --cast "/tmp/precompact-demo/$style.cast" --out docs/media --footer-style "$style" \
+    --font-dir <MesloLGS Nerd Font directory> --font-dir <DejaVu fonts directory>
+done
+```
+
+agg does not support SGR 58: the underline style's image shows the underline in the text colour.
+
 With Nix, `nix shell nixpkgs#asciinema-agg nixpkgs#gifsicle nixpkgs#ffmpeg-headless` supplies the tools.
 The fonts are in `nixpkgs#nerd-fonts.meslo-lg` and `nixpkgs#dejavu_fonts`.
 

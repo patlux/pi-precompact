@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shutil
 import subprocess
 import tempfile
@@ -28,6 +29,27 @@ FOOTER_COLUMNS = 84
 def load(cast: Path) -> tuple[dict, list[list]]:
     lines = cast.read_text(encoding="utf-8").splitlines()
     return json.loads(lines[0]), [json.loads(line) for line in lines[1:]]
+
+
+ANSI = re.compile(r"\x1b\[[0-9;:?<>=]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)")
+
+
+def last_running(events: list[list]) -> float:
+    """The last output that shows `pre running` before the first `→ ~` (ready).
+
+    The text style redraws its clock every second, so record.py's quiet-period marks land after the
+    running phase; the recording itself says when it was visible.
+    """
+    seen = None
+    for moment, _, chunk in events:
+        text = ANSI.sub("", chunk)
+        if "→ ~" in text:
+            break
+        if "pre running" in text:
+            seen = moment
+    if seen is None:
+        raise SystemExit("the recording never shows pre running before ready")
+    return seen
 
 
 def window(events: list[list], start: float, end: float) -> list[list]:
@@ -143,6 +165,10 @@ def main() -> None:
     parser.add_argument("--cast", required=True, type=Path)
     parser.add_argument("--out", required=True, type=Path)
     parser.add_argument("--font-dir", action="append", default=[])
+    parser.add_argument(
+        "--footer-style", default=None,
+        help="render only footer-<style>.png (idle, running, ready, adopted) from a record.py --footer recording",
+    )
     args = parser.parse_args()
     for tool in ("agg", "gifsicle", "ffmpeg", "ffprobe"):
         if not shutil.which(tool):
@@ -151,6 +177,22 @@ def main() -> None:
     with tempfile.TemporaryDirectory(prefix="precompact-render-") as temp:
         r = Renderer(args.cast, args.out, args.font_dir, Path(temp))
         m = r.marks
+        if args.footer_style:
+            if m.get("footer") != args.footer_style:
+                raise SystemExit(f"{args.cast} was recorded with footer {m.get('footer')!r}")
+            states = {
+                "idle": m["answer2"] + 0.8,
+                # The text style's clock: late in the running phase, so it shows a few seconds.
+                "running": last_running(r.events) + 0.3 if args.footer_style == "text" else m["running"] + 0.4,
+                "ready": m["ready"] + 1.0,
+                "applied": m["applied"] + 1.5,
+            }
+            parts = [Path(temp) / f"style-{name}.png" for name in states]
+            for part, at in zip(parts, states.values()):
+                r.still(at, part, rows=(r.rows, r.rows))
+            r.stack(parts, args.out / f"footer-{args.footer_style}.png")
+            print(f"footer-{args.footer_style}.png")
+            return
         footer = (r.rows - 1, r.rows)
         stats = (r.rows, r.rows)
         # Half speed: each real 40 ms frame of the reveal shows for 80 ms.

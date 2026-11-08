@@ -131,6 +131,32 @@ The bar is the default. The `footer` key of the [configuration](#configuration) 
 - All styles keep Pi's segment unchanged, fade in after the first measured response, and fall back to the compact
   `pre: <state>` text when they do not fit.
 
+Each image is a real Pi session with that style, from top to bottom: `idle`, `running`, `ready` with the
+expected context, and an adopted summary.
+
+`bar`
+
+<img src="https://raw.githubusercontent.com/patlux/pi-precompact/main/docs/media/footer-bar.png" width="690" alt="The bar style: a 24-cell context bar with start and threshold marks before Pi's context segment, in four states">
+
+`short`
+
+<img src="https://raw.githubusercontent.com/patlux/pi-precompact/main/docs/media/footer-short.png" width="690" alt="The short style: an 8-cell context bar with both marks before Pi's context segment, in four states">
+
+`block`
+
+<img src="https://raw.githubusercontent.com/patlux/pi-precompact/main/docs/media/footer-block.png" width="690" alt="The block style: one block glyph in the state colour before Pi's context segment, in four states">
+
+`text`
+
+<img src="https://raw.githubusercontent.com/patlux/pi-precompact/main/docs/media/footer-text.png" width="690" alt="The text style: no bar; pre in 117k while idle, pre running 7s while running, then the expected context and the adopted mark">
+
+`underline`
+
+<img src="https://raw.githubusercontent.com/patlux/pi-precompact/main/docs/media/footer-underline.png" width="690" alt="The underline style: Pi's context segment underlined as far as the context is filled, in four states">
+
+The recording renderer, like other terminals without SGR 58, draws the underline in the text colour and leaves the
+space out. Ghostty, kitty, WezTerm, and iTerm2 draw it in the state colour, across the space.
+
 #### Underline
 
 At 91.6%, the underline runs below the first 16 of the 17 columns of `91.6%/272k (auto)`.

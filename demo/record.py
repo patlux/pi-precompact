@@ -175,6 +175,10 @@ def main() -> None:
     parser.add_argument("--out", required=True, type=Path, help="output path without extension")
     parser.add_argument("--cols", type=int, default=120)
     parser.add_argument("--rows", type=int, default=30)
+    parser.add_argument(
+        "--footer", default=None, choices=["bar", "short", "block", "text", "underline"],
+        help="footer style, written to the temporary ~/.pi/agent/extensions/precompact.json",
+    )
     args = parser.parse_args()
     # Pi runs offline here; without these tools it prints download warnings into the recording.
     missing = [tool for tool in ("fd", "rg") if shutil.which(tool) is None]
@@ -187,6 +191,10 @@ def main() -> None:
         agent = home / ".pi" / "agent"
         agent.mkdir(parents=True)
         (agent / "settings.json").write_text(json.dumps(SCENARIO["settings"], indent=2), encoding="utf-8")
+        if args.footer:
+            (agent / "extensions").mkdir()
+            config = json.dumps({"footer": args.footer})
+            (agent / "extensions" / "precompact.json").write_text(config, encoding="utf-8")
         cwd = project(home)
         if args.pi:
             pi, source = args.pi, "given executable"
@@ -214,6 +222,7 @@ def main() -> None:
         ]
         session = Session(argv, cwd, env, args.cols, args.rows)
         session.marks["pi"] = source
+        session.marks["footer"] = args.footer or "bar"
         failure: BaseException | None = None
         try:
             session.wait_quiet(quiet=1.0, minimum=2.0)
