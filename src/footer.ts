@@ -14,6 +14,7 @@ import {
 } from "@earendil-works/pi-tui";
 import type { FooterStyle } from "./config.ts";
 import type { FooterState, Label } from "./controller.ts";
+import { formatDuration, formatTokens } from "./format.ts";
 
 type Theme = ExtensionContext["ui"]["theme"];
 type Token = Parameters<Theme["fg"]>[0];
@@ -25,8 +26,10 @@ const WIDGET_KEY = "precompact-footer";
 /** Marks our render wrapper. `Symbol.for` keeps the key stable across extension reloads. */
 const MARK = Symbol.for("pi-precompact.footer-render");
 const MIN_PADDING = 2;
-const BAR_MIN_WIDTH = 100;
-const CELLS = 24;
+/** The narrowest terminal that shows each style; narrower ones fall back to the compact text form. */
+const MIN_WIDTH: Record<FooterStyle, number> = { bar: 100, short: 80, block: 0, text: 0, underline: 0 };
+const CELLS: Partial<Record<FooterStyle, number>> = { bar: 24, short: 8 };
+const BLOCKS = "▁▂▃▄▅▆▇█";
 // Pi's context segment, for example "91.6%/272k (auto)" or "?/272k".
 const CONTEXT = /(^| )(\d+(?:\.\d+)?%|\?)(\/\d+(?:\.\d+)?[kM]?)( \(auto\))?(?= |$)/;
 // A slice keeps the opening colour of its text but not the closing code.
@@ -256,18 +259,18 @@ function statusRow(statuses: ReadonlyMap<string, string>, theme: Theme, width: n
   return truncateToWidth(text, width, theme.fg("dim", "..."));
 }
 
-/** Context bar with the background start (accent) and Pi's threshold (error) as marks. */
-function gauge(percent: number | null, state: FooterState, elapsed: number): Segment[] {
-  const measured = percent === null ? 0 : Math.round((Math.min(Math.max(percent, 0), 100) / 100) * CELLS);
+/** Context bar of `cells` cells with the background start (accent) and Pi's threshold (error) as marks. */
+function gauge(percent: number | null, state: FooterState, elapsed: number, cells: number): Segment[] {
+  const measured = percent === null ? 0 : Math.round((Math.min(Math.max(percent, 0), 100) / 100) * cells);
   const filled =
     elapsed === Infinity ? measured : Math.round(measured * progress(elapsed, FILL_START_MS, FILL_MS));
   const fill = state.applied ? "muted" : FILL_COLOR[state.state];
   const marks = new Map<number, Token>();
-  if (state.start !== undefined) marks.set(Math.min(CELLS - 1, Math.floor(state.start * CELLS)), "accent");
+  if (state.start !== undefined) marks.set(Math.min(cells - 1, Math.floor(state.start * cells)), "accent");
   if (state.threshold !== undefined)
-    marks.set(Math.min(CELLS - 1, Math.floor(state.threshold * CELLS)), "error");
+    marks.set(Math.min(cells - 1, Math.floor(state.threshold * cells)), "error");
   const glyphs: Segment[] = [];
-  for (let cell = 0; cell < CELLS; cell++) {
+  for (let cell = 0; cell < cells; cell++) {
     const mark = marks.get(cell);
     if (mark) glyphs.push(["│", mark]);
     glyphs.push(cell < filled ? ["━", fill] : ["─", "dim"]);
@@ -310,8 +313,53 @@ function suffixOf(state: FooterState, percent: number | null): Segment[] {
   ];
 }
 
-/** Bar before Pi's unchanged context segment; the expected context or the state after it. */
-function barStats(
+/** One block glyph, full at Pi's threshold rather than at the end of the window; the state colours it. */
+function block(percent: number | null, state: FooterState, elapsed: number): Segment {
+  if (percent === null) return [BLOCKS[0] ?? "", "dim"];
+  const level = Math.min(1, Math.max(0, percent / 100 / (state.threshold ?? 1)));
+  const grown = elapsed === Infinity ? level : level * progress(elapsed, FILL_START_MS, FILL_MS);
+  // Round down: the full block appears only at the threshold itself.
+  const glyph = BLOCKS[grown >= 1 ? BLOCKS.length - 1 : Math.floor(grown * (BLOCKS.length - 1))] ?? "";
+  return [glyph, state.applied ? "muted" : FILL_COLOR[state.state]];
+}
+
+/** Whole seconds since the background request started; the render for the next second is scheduled. */
+function runningSeconds(state: FooterState, now: number): number | undefined {
+  return state.runningSince === undefined
+    ? undefined
+    : Math.max(0, Math.floor((now - state.runningSince) / 1000));
+}
+
+/**
+ * The text style's suffix: the tokens left until the plugin starts while idle, the running time while
+ * running, otherwise the same suffix as the bar.
+ */
+function textSuffixOf(state: FooterState, percent: number | null, now: number): Segment[] {
+  if (state.state === "idle" && !state.applied) {
+    if (percent === null || state.start === undefined || state.window === undefined) return [];
+    // Pi's percentage has one decimal; the estimate is good to about a thousandth of the window.
+    const left = (state.start - percent / 100) * state.window;
+    return left >= 1000 ? [[` pre in ${formatTokens(left)}`, "dim"]] : [];
+  }
+  const seconds = runningSeconds(state, now);
+  if (state.state === "running" && seconds !== undefined)
+    return [
+      [" pre ", "dim"],
+      [`running ${formatDuration(seconds * 1000)}`, STATE_COLOR.running],
+    ];
+  return suffixOf(state, percent);
+}
+
+/** The glyphs this style draws before Pi's segment. */
+function leadOf(style: FooterStyle, percent: number | null, state: FooterState, elapsed: number): Segment[] {
+  const cells = CELLS[style];
+  if (cells !== undefined) return gauge(percent, state, elapsed, cells);
+  if (style === "block") return [block(percent, state, elapsed)];
+  return [];
+}
+
+/** Glyphs before Pi's unchanged context segment; the expected context or the state after it. */
+function leadStats(
   stats: string,
   plain: string,
   context: RegExpExecArray,
@@ -320,19 +368,21 @@ function barStats(
   width: number,
   elapsed: number,
   background: Color | undefined,
+  style: FooterStyle,
+  now: number,
 ) {
   const [, lead = "", percentText = "", windowText = "", autoText = ""] = context;
   const column = visibleWidth(plain.slice(0, context.index + lead.length));
   const percent = percentText === "?" ? null : Number.parseFloat(percentText);
-  // Pi's own segment and colours appear at once; only the bar and the suffix fade in.
+  // Pi's own segment and colours appear at once; only the glyphs and the suffix fade in.
   const native = sliceByColumn(stats, column, visibleWidth(percentText + windowText + autoText)) + RESET_FG;
   const paint = painter(theme, elapsed, background);
-  const glyphs = gauge(percent, state, elapsed);
+  const glyphs = leadOf(style, percent, state, elapsed);
   const bar = glyphs.map(([text, token], index) => paint(text, token, index)).join("");
-  const suffix = suffixOf(state, percent)
+  const suffix = (style === "text" ? textSuffixOf(state, percent, now) : suffixOf(state, percent))
     .map(([text, token]) => paint(text, token, glyphs.length))
     .join("");
-  const left = `${sliceByColumn(stats, 0, column)}${bar} ${native}${suffix}`;
+  const left = `${sliceByColumn(stats, 0, column)}${bar}${glyphs.length > 0 ? " " : ""}${native}${suffix}`;
   return replaceUpToContext(stats, plain, context, left, width);
 }
 
@@ -409,6 +459,13 @@ function textStats(
   );
 }
 
+export interface InlineOptions {
+  readonly reveal?: RevealView;
+  readonly style?: FooterStyle;
+  /** The clock for the text style's running time. */
+  readonly now?: number;
+}
+
 /**
  * Move this plugin's status from Pi's status row into the statistics line.
  * Before the first measured response, show nothing at all, like Pi.
@@ -420,8 +477,7 @@ export function inlineStatus(
   state: FooterState | undefined,
   theme: Theme,
   width: number,
-  reveal: RevealView = SETTLED,
-  style: FooterStyle = "bar",
+  { reveal = SETTLED, style = "bar", now = Date.now() }: InlineOptions = {},
 ): string[] {
   if (!state || !statuses || statuses.get(STATUS_KEY) !== `precompact: ${state.state}`) return lines;
   if (lines.length !== 3 || lines[2] !== statusRow(statuses, theme, width)) return lines;
@@ -432,13 +488,11 @@ export function inlineStatus(
   // Before the first measured response Pi shows no usage; show nothing either.
   const elapsed = reveal.phase(`${width}|${state.state}|${state.applied}`);
   const decorated =
-    elapsed === undefined
+    elapsed === undefined || width < MIN_WIDTH[style]
       ? undefined
       : style === "underline"
         ? underlineStats(stats, plain, context, state, theme, width, elapsed, reveal.background)
-        : width >= BAR_MIN_WIDTH
-          ? barStats(stats, plain, context, state, theme, width, elapsed, reveal.background)
-          : undefined;
+        : leadStats(stats, plain, context, state, theme, width, elapsed, reveal.background, style, now);
   const inline =
     elapsed === undefined ? stats : (decorated ?? textStats(stats, plain, context, state, theme, width));
   if (inline === undefined) return lines;
@@ -454,8 +508,7 @@ export function decorateFooter(
   footer: FooterComponent,
   theme: Theme,
   state: () => FooterState | undefined,
-  reveal: RevealView = SETTLED,
-  style: FooterStyle = "bar",
+  options: { reveal?: RevealView; style?: FooterStyle; tick?: (delayMs: number) => void } = {},
 ) {
   // Drop our own inactive wrappers from earlier runtimes when they are on top.
   for (let mark = markOf(footer.render); mark && !mark.active; mark = markOf(footer.render)) {
@@ -465,7 +518,13 @@ export function decorateFooter(
   let active = true;
   const render = function (this: FooterComponent, width: number): string[] {
     const lines = original.call(this, width);
-    return active ? inlineStatus(lines, readStatuses(this), state(), theme, width, reveal, style) : lines;
+    if (!active) return lines;
+    const current = state();
+    const now = Date.now();
+    // The text style counts the running time in seconds: ask for the render of the next second.
+    if (options.style === "text" && current?.state === "running" && current.runningSince !== undefined)
+      options.tick?.(1000 - ((now - current.runningSince) % 1000));
+    return inlineStatus(lines, readStatuses(this), current, theme, width, { ...options, now });
   };
   const mark: Mark = {
     original,
@@ -494,13 +553,29 @@ export function attachFooter(
 ): () => void {
   let undo: (() => void) | undefined;
   let reveal: Reveal | undefined;
+  let tick: ReturnType<typeof setTimeout> | undefined;
+  const stopTick = () => {
+    if (tick) clearTimeout(tick);
+    tick = undefined;
+  };
   ctx.ui.setWidget(
     WIDGET_KEY,
     (tui, theme) => {
       const footer = findBuiltInFooter(tui.children);
       const current = new Reveal(ctx.sessionManager, options.motion, () => tui.requestRender());
       reveal = current;
-      undo = footer ? decorateFooter(footer, theme, state, current, options.style) : undefined;
+      // At most one pending timer; it ends by itself when the state stops running.
+      const schedule = (delayMs: number) => {
+        if (tick) return;
+        tick = setTimeout(() => {
+          tick = undefined;
+          tui.requestRender();
+        }, delayMs);
+        tick.unref?.();
+      };
+      undo = footer
+        ? decorateFooter(footer, theme, state, { reveal: current, style: options.style, tick: schedule })
+        : undefined;
       // The fade needs the real terminal background. Without an answer or truecolor,
       // each glyph appears in its final colour when the wave reaches it.
       if (footer && current.pending && getTerminalColorMode() === "truecolor") {
@@ -515,6 +590,7 @@ export function attachFooter(
         invalidate() {},
         dispose: () => {
           current.settle();
+          stopTick();
           undo?.();
         },
       };
@@ -523,6 +599,7 @@ export function attachFooter(
   );
   return () => {
     reveal?.settle();
+    stopTick();
     undo?.();
     undo = undefined;
     ctx.ui.setWidget(WIDGET_KEY, undefined);

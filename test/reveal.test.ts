@@ -118,7 +118,7 @@ test("frames: the wave runs left to right, the fill grows, Pi's text stays put",
   f.statuses.set(STATUS_KEY, "precompact: idle");
   const lines = native.call(f.footer, 160);
   const frame = (elapsed: number, background?: ReturnType<typeof rgbColor>) =>
-    inlineStatus(lines, f.statuses, idle, theme, 160, at(elapsed, background))[1] ?? "";
+    inlineStatus(lines, f.statuses, idle, theme, 160, { reveal: at(elapsed, background) })[1] ?? "";
   const final = frame(Infinity);
   for (const elapsed of [0, 40, 80, 120, 160, 200, 240]) {
     const line = frame(elapsed);
@@ -147,11 +147,11 @@ test("frames: the state suffix fades in after the bar; hidden shows Pi's line un
   f.statuses.set(STATUS_KEY, "precompact: running");
   const lines = native.call(f.footer, 160);
   const frame = (elapsed: number) =>
-    plain(inlineStatus(lines, f.statuses, running, theme, 160, at(elapsed))[1] ?? "");
+    plain(inlineStatus(lines, f.statuses, running, theme, 160, { reveal: at(elapsed) })[1] ?? "");
   assert.match(frame(Infinity), /\(auto\) pre running {2,}/);
   assert.match(frame(100), /\(auto\) {12,}/, "the suffix is not there yet");
   assert.match(frame(260), /\(auto\) pre running {2,}/);
-  const hidden = inlineStatus(lines, f.statuses, running, theme, 160, { phase: () => undefined });
+  const hidden = inlineStatus(lines, f.statuses, running, theme, 160, { reveal: { phase: () => undefined } });
   assert.deepEqual(hidden, [lines[0], lines[1]], "nothing from the plugin, not even the status row");
 });
 

@@ -40,6 +40,8 @@ test("footer data has both marks while waiting and only Pi's threshold when off"
   assert.equal(idle?.threshold, 0.9);
   assert.ok(Math.abs((idle?.start ?? 0) - 0.765) < 1e-9);
   assert.equal(idle?.after, undefined);
+  assert.equal(idle?.window, 100_000);
+  assert.equal(idle?.runningSince, undefined);
   controller.setEnabled(false, f.ctx);
   assert.equal(controller.footerState()?.state, "off");
   assert.equal(controller.footerState()?.start, undefined, "a disabled plugin has no start mark");
@@ -48,7 +50,7 @@ test("footer data has both marks while waiting and only Pi's threshold when off"
   assert.equal(controller.footerState()?.state, "off");
   controller.setEnabled(true, f.ctx);
   controller.reset({ ...f.ctx, model: { ...f.model, api: "pi-virtual" } });
-  assert.deepEqual(controller.footerState(), { state: "unavailable", applied: false });
+  assert.deepEqual(controller.footerState(), { state: "unavailable", applied: false, window: 100_000 });
   assert.equal(f.provider.state.callCount, 0);
 });
 
@@ -60,14 +62,18 @@ test("ready carries the expected context after adoption; adoption marks applied 
     controller.reset(f.ctx);
     await f.close();
   });
+  const before = Date.now();
   controller.consider(f.ctx);
   assert.equal(controller.footerState()?.state, "running");
   assert.equal(controller.footerState()?.after, undefined);
+  const since = controller.footerState()?.runningSince ?? 0;
+  assert.ok(since >= before && since <= Date.now(), "running carries the job's start");
   await flush();
   gate.resolve(result(beforeEvent(f.ctx).preparation));
   await flush();
   const ready = controller.footerState();
   assert.equal(ready?.state, "ready");
+  assert.equal(ready?.runningSince, undefined, "only running shows a time");
   const after = ready?.after ?? 0;
   assert.ok(after > 0 && after < (ready?.threshold ?? 0), `after ${after} must fit below Pi's threshold`);
   const details = controller.details(f.ctx);

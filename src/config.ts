@@ -2,8 +2,16 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { CONFIG_DIR_NAME, getAgentDir } from "@earendil-works/pi-coding-agent";
 
-/** `bar`: the context bar before Pi's segment. `underline`: Pi's segment underlined, no extra columns. */
-export type FooterStyle = "bar" | "underline";
+/**
+ * How the footer shows the context and the state, next to Pi's context segment:
+ * - `bar`: a 24-cell bar with start and threshold marks (default, from 100 columns)
+ * - `short`: the same bar with 8 cells (from 80 columns)
+ * - `block`: one block glyph that fills up towards Pi's threshold
+ * - `text`: no bar; the tokens left until the plugin starts, and the running time
+ * - `underline`: Pi's segment underlined as far as the context is filled
+ */
+export const FOOTER_STYLES = ["bar", "short", "block", "text", "underline"] as const;
+export type FooterStyle = (typeof FOOTER_STYLES)[number];
 
 export interface PrecompactConfig {
   readonly footer: FooterStyle;
@@ -42,8 +50,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isFooterStyle(value: unknown): value is FooterStyle {
-  return value === "bar" || value === "underline";
+  return FOOTER_STYLES.some((style) => style === value);
 }
+
+const STYLE_LIST = FOOTER_STYLES.join(", ");
 
 type Draft = { footer: FooterStyle; motion: boolean };
 
@@ -53,7 +63,7 @@ function applyFile(config: Draft, values: Record<string, unknown>, source: strin
   }
   if (values.footer !== undefined) {
     if (isFooterStyle(values.footer)) config.footer = values.footer;
-    else warnings.push(`${source}: "footer" must be "bar" or "underline"`);
+    else warnings.push(`${source}: "footer" must be one of ${STYLE_LIST}`);
   }
   if (values.motion !== undefined) {
     if (typeof values.motion === "boolean") config.motion = values.motion;
@@ -65,7 +75,7 @@ function applyEnvironment(config: Draft, env: NodeJS.ProcessEnv, warnings: strin
   const footer = env[FOOTER_ENV]?.trim().toLowerCase();
   if (footer) {
     if (isFooterStyle(footer)) config.footer = footer;
-    else warnings.push(`${FOOTER_ENV} must be bar or underline`);
+    else warnings.push(`${FOOTER_ENV} must be one of ${STYLE_LIST}`);
   }
   const motion = env[MOTION_ENV]?.trim().toLowerCase();
   if (motion) {

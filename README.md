@@ -110,10 +110,29 @@ The plugin asks the terminal for its background colour once, as Pi's theme does.
 Without an answer or without truecolor, each glyph appears directly in its colour as the wave reaches it.
 Set `"motion": false` in the [configuration](#configuration) to show the bar without animation.
 
-### Underline instead of the bar
+### Footer styles
 
-The bar is the default. Set `"footer": "underline"` in the [configuration](#configuration) to underline Pi's
-context segment instead.
+The bar is the default. The `footer` key of the [configuration](#configuration) selects a smaller form:
+
+| Style | Example (ready, 91.6% of 272k) | Columns | From |
+| --- | --- | --- | --- |
+| `bar` | `━━━━━━━━━━━━━━━━━━━│━━━│── 91.6%/272k (auto) → ~14%` | 27 | 100 columns |
+| `short` | `━━━━━━│━│─ 91.6%/272k (auto) → ~14%` | 11 | 80 columns |
+| `block` | `▇ 91.6%/272k (auto) → ~14%` | 2 | any width |
+| `text` | `40.0%/272k (auto) pre in 108k`, `84.1%/272k (auto) pre running 42s` | 0 | any width |
+| `underline` | Pi's segment, underlined | 0 | any width |
+
+- `short` is the bar with 8 instead of 24 cells. Both marks stay; they can sit next to each other.
+- `block` is one of `▁▂▃▄▅▆▇█`. It is full at Pi's threshold, not at the end of the window. The state colours it;
+  there is no start mark.
+- `text` draws no bar. While idle it shows the tokens left until background preparation starts, estimated from
+  Pi's percentage. Past that point it shows nothing. While running it counts the seconds; the footer then renders
+  once per second. The other states show the same suffix as the bar.
+- All styles keep Pi's segment unchanged, fade in after the first measured response, and fall back to the compact
+  `pre: <state>` text when they do not fit.
+
+#### Underline
+
 At 91.6%, the underline runs below the first 16 of the 17 columns of `91.6%/272k (auto)`.
 
 - The underline covers the same share of the segment as the context fills the window. It adds no columns, at any width.
@@ -152,7 +171,7 @@ The extension reads an optional JSON file when a session starts:
 
 | Key | Values | Default | Environment |
 | --- | --- | --- | --- |
-| `footer` | `"bar"`, `"underline"` | `"bar"` | `PI_PRECOMPACT_FOOTER=bar\|underline` |
+| `footer` | `"bar"`, `"short"`, `"block"`, `"text"`, `"underline"` | `"bar"` | `PI_PRECOMPACT_FOOTER=<style>` |
 | `motion` | `true`, `false` | `true` | `PI_PRECOMPACT_MOTION=on\|off` |
 
 A later source replaces only the keys it sets. An invalid value or an unknown key keeps the previous value,

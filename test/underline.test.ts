@@ -77,15 +77,9 @@ test("underline: the state picks the colour and the suffix; ? has no underline",
   ];
   for (const [state, expected, underline] of cases) {
     f.statuses.set(STATUS_KEY, `precompact: ${state.state}`);
-    const lines = inlineStatus(
-      native.call(f.footer, 160),
-      f.statuses,
-      state,
-      theme,
-      160,
-      undefined,
-      "underline",
-    );
+    const lines = inlineStatus(native.call(f.footer, 160), f.statuses, state, theme, 160, {
+      style: "underline",
+    });
     assert.equal(lines.length, 2, state.state);
     assert.match(plain(lines[1] ?? ""), new RegExp(`^↑\\S+ ${expected.replace(/[.()?~]/g, "\\$&")} {2,}\\S`));
     assert.ok(lines[1]?.includes(`\x1b[4m${underline}`), `${state.state} underline colour`);
@@ -94,7 +88,7 @@ test("underline: the state picks the colour and the suffix; ? has no underline",
   f.statuses.set(STATUS_KEY, "precompact: idle");
   const idle: FooterState = { state: "idle", applied: false, ...marks };
   const unknown = native.call(f.footer, 160).map((line) => line.replace("79.0%", "?"));
-  const lines = inlineStatus(unknown, f.statuses, idle, theme, 160, undefined, "underline");
+  const lines = inlineStatus(unknown, f.statuses, idle, theme, 160, { style: "underline" });
   assert.match(plain(lines[1] ?? ""), /^↑\S+ \?\/100k \(auto\) {2,}\S/);
   assert.doesNotMatch(lines[1] ?? "", sgr("⎋\\[4m"), "no measured context, no underline");
 });
@@ -106,8 +100,10 @@ test("underline: the fade-in grows it, and Pi's wrapping keeps it closed per lin
   const running: FooterState = { state: "running", applied: false, ...marks };
   f.statuses.set(STATUS_KEY, "precompact: running");
   const frame = (elapsed: number) =>
-    inlineStatus(native.call(f.footer, 160), f.statuses, running, theme, 160, at(elapsed), "underline")[1] ??
-    "";
+    inlineStatus(native.call(f.footer, 160), f.statuses, running, theme, 160, {
+      reveal: at(elapsed),
+      style: "underline",
+    })[1] ?? "";
   assert.equal(underlined(frame(0)), undefined, "nothing before the fill starts");
   const middle = underlined(frame(120))?.length ?? 0;
   assert.ok(middle > 0 && middle < 13, `grows: ${middle}`);
@@ -139,5 +135,8 @@ test("an invalid footer in the config keeps the bar and warns once", async (t) =
   assert.match(plain(f.footer.render(160)[1] ?? ""), /│─{3} 79\.0%\/100k \(auto\)/);
   const warnings = f.notices.filter((notice) => notice.startsWith("pi-precompact config:"));
   assert.equal(warnings.length, 1);
-  assert.match(warnings[0] ?? "", /precompact\.json: "footer" must be "bar" or "underline"/);
+  assert.match(
+    warnings[0] ?? "",
+    /precompact\.json: "footer" must be one of bar, short, block, text, underline/,
+  );
 });

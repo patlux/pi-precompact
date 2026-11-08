@@ -43,6 +43,10 @@ export interface FooterState {
   threshold?: number;
   /** Estimated context after Pi adopts the held summary (ready only). */
   after?: number;
+  /** The model's context window in tokens, when known. */
+  window?: number;
+  /** When the background request started (running only), in `Date.now()` milliseconds. */
+  runningSince?: number;
 }
 
 export interface Applied {
@@ -195,8 +199,10 @@ export class BackgroundCompaction {
       ...this.shares(ctx, label),
     };
     const window = ctx.model?.contextWindow ?? 0;
+    if (window > 0) footer.window = window;
     if (label === "ready" && this.job?.estimate !== undefined && window > 0)
       footer.after = this.job.estimate / window;
+    if (label === "running" && this.job) footer.runningSince = this.job.startedAt;
     // Store the footer data first: setStatus triggers the render that reads it.
     this.footer = footer;
     ctx.ui.setStatus(STATUS_KEY, `precompact: ${label}`);

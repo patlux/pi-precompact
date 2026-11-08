@@ -60,8 +60,8 @@ test("invalid values keep the previous value and explain why", async (t) => {
   assert.deepEqual(loaded.warnings, [
     `${global}: unknown key "colour"`,
     `${global}: "motion" must be true or false`,
-    `${project}: "footer" must be "bar" or "underline"`,
-    `${FOOTER_ENV} must be bar or underline`,
+    `${project}: "footer" must be one of bar, short, block, text, underline`,
+    `${FOOTER_ENV} must be one of bar, short, block, text, underline`,
     `${MOTION_ENV} must be on or off`,
   ]);
 });
